@@ -17,8 +17,6 @@
             background: #0a0a0a;
             color: #ffffff;
         }
-
-        /* Header */
         .header {
             background: #0d0d0d;
             border-bottom: 1px solid #2a2a2a;
@@ -114,15 +112,11 @@
             font-size: 10px;
             color: #ff3b30;
         }
-
-        /* Main Content */
         .main-content {
             padding: 32px;
             max-width: 1400px;
             margin: 0 auto;
         }
-
-        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -160,8 +154,6 @@
             color: #4caf50;
             margin-top: 8px;
         }
-
-        /* Cards */
         .card {
             background: #121212;
             border: 1px solid #2a2a2a;
@@ -185,8 +177,6 @@
             flex-wrap: wrap;
             gap: 16px;
         }
-
-        /* Charts row */
         .charts-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -207,8 +197,6 @@
         canvas {
             max-height: 250px;
         }
-
-        /* Tables */
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -226,8 +214,6 @@
             border-bottom: 1px solid #1a1a1a;
             font-size: 13px;
         }
-
-        /* Badges */
         .badge {
             padding: 4px 8px;
             border-radius: 20px;
@@ -243,8 +229,6 @@
         .badge-completed { background: #28a745; color: white; }
         .badge-urgent { background: #ff3b30; color: white; }
         .badge-high { background: #ff6b6b; color: white; }
-
-        /* Responsive */
         @media (max-width: 1024px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .charts-row { grid-template-columns: 1fr; }
@@ -271,6 +255,7 @@
             <button class="nav-btn" onclick="location.href='ordenes.html'">📋 OT</button>
             <button class="nav-btn" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
             <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
+            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
             <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
         </div>
         <div class="user-info">
@@ -283,7 +268,6 @@
     </div>
 
     <div class="main-content">
-        <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon">🔧</div>
@@ -311,7 +295,6 @@
             </div>
         </div>
 
-        <!-- Charts Row -->
         <div class="charts-row">
             <div class="chart-container">
                 <h3>📊 ÓRDENES DE TRABAJO POR ESTADO</h3>
@@ -323,7 +306,6 @@
             </div>
         </div>
 
-        <!-- Últimas Órdenes de Trabajo -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title">📋 ÚLTIMAS ÓRDENES DE TRABAJO</div>
@@ -332,7 +314,6 @@
             <div id="ultimasOTs"></div>
         </div>
 
-        <!-- Equipos Críticos -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title">⚠️ EQUIPOS CON CRITICIDAD A (CRÍTICOS)</div>
@@ -341,7 +322,6 @@
             <div id="equiposCriticosList"></div>
         </div>
 
-        <!-- Actividad Reciente -->
         <div class="card">
             <div class="card-title">⏱️ ACTIVIDADES RECIENTES</div>
             <div id="actividadesRecientes"></div>
@@ -349,33 +329,25 @@
     </div>
 
     <script>
-        // Configuración
         const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         let estadosChart, criticidadChart;
-        let currentUser = null;
+        let currentUserRol = null;
 
-        // Logout
         async function logout() {
             await supabase.auth.signOut();
             window.location.href = 'index.html';
         }
 
-        // Cargar datos del dashboard
         async function loadDashboard() {
             try {
-                // 1. Estadísticas de equipos
                 const { count: totalEquipos } = await supabase.from('equipos').select('*', { count: 'exact', head: true });
                 const { count: equiposCriticos } = await supabase.from('equipos').select('*', { count: 'exact', head: true }).eq('criticidad', 'A');
-                
                 document.getElementById('totalEquipos').textContent = totalEquipos || 0;
                 document.getElementById('equiposCriticos').textContent = equiposCriticos || 0;
-                document.getElementById('equiposChange').innerHTML = `📊 Total en sistema`;
-                document.getElementById('criticosChange').innerHTML = `⚠️ ${equiposCriticos || 0} requieren atención prioritaria`;
 
-                // 2. Estadísticas de OT
                 const { count: otsPendientes } = await supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'Pendiente');
                 const { count: otsEnProgreso } = await supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'En Progreso');
                 const inicioMes = new Date(); inicioMes.setDate(1);
@@ -384,9 +356,7 @@
                 document.getElementById('otsPendientes').textContent = otsPendientes || 0;
                 document.getElementById('otsCompletadas').textContent = otsCompletadas || 0;
                 document.getElementById('pendientesChange').innerHTML = `${otsEnProgreso || 0} en progreso`;
-                document.getElementById('completadasChange').innerHTML = `✅ ${otsCompletadas || 0} este mes`;
 
-                // 3. Gráfico de estados de OT
                 const { data: estadosData } = await supabase.from('ordenes_trabajo').select('estado');
                 const estadosCount = { Pendiente: 0, 'En Progreso': 0, Completada: 0, Cancelada: 0 };
                 estadosData?.forEach(ot => estadosCount[ot.estado] = (estadosCount[ot.estado] || 0) + 1);
@@ -397,16 +367,11 @@
                     type: 'doughnut',
                     data: {
                         labels: ['Pendiente', 'En Progreso', 'Completada', 'Cancelada'],
-                        datasets: [{
-                            data: [estadosCount.Pendiente, estadosCount['En Progreso'], estadosCount.Completada, estadosCount.Cancelada],
-                            backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#6c757d'],
-                            borderWidth: 0
-                        }]
+                        datasets: [{ data: [estadosCount.Pendiente, estadosCount['En Progreso'], estadosCount.Completada, estadosCount.Cancelada], backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#6c757d'], borderWidth: 0 }]
                     },
                     options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } }
                 });
 
-                // 4. Gráfico de criticidad de equipos
                 const { data: criticidadData } = await supabase.from('equipos').select('criticidad');
                 const criticidadCount = { A: 0, B: 0, C: 0 };
                 criticidadData?.forEach(e => { if (e.criticidad) criticidadCount[e.criticidad] = (criticidadCount[e.criticidad] || 0) + 1; });
@@ -417,17 +382,11 @@
                     type: 'bar',
                     data: {
                         labels: ['Crítico (A)', 'Moderado (B)', 'Bajo (C)'],
-                        datasets: [{
-                            label: 'Cantidad de equipos',
-                            data: [criticidadCount.A, criticidadCount.B, criticidadCount.C],
-                            backgroundColor: ['#ff3b30', '#ffc107', '#28a745'],
-                            borderRadius: 8
-                        }]
+                        datasets: [{ label: 'Cantidad', data: [criticidadCount.A, criticidadCount.B, criticidadCount.C], backgroundColor: ['#ff3b30', '#ffc107', '#28a745'], borderRadius: 8 }]
                     },
                     options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#fff' }, grid: { color: '#2a2a2a' } }, x: { ticks: { color: '#fff' } } } }
                 });
 
-                // 5. Últimas órdenes de trabajo
                 const { data: ultimasOTs } = await supabase.from('ordenes_trabajo').select('numero_ot, titulo, prioridad, estado, created_at').order('created_at', { ascending: false }).limit(5);
                 let otsHtml = '<table class="data-table"><thead><tr><th>N° OT</th><th>TÍTULO</th><th>PRIORIDAD</th><th>ESTADO</th><th>FECHA</th></tr></thead><tbody>';
                 ultimasOTs?.forEach(ot => {
@@ -436,18 +395,14 @@
                     otsHtml += `<tr><td><strong>${ot.numero_ot || '-'}</strong></td><td>${ot.titulo || '-'}</td><td><span class="badge ${prioridadClass}">${ot.prioridad || '-'}</span></td><td><span class="badge ${estadoClass}">${ot.estado || '-'}</span></td><td>${new Date(ot.created_at).toLocaleDateString()}</td></tr>`;
                 });
                 otsHtml += '</tbody></table>';
-                document.getElementById('ultimasOTs').innerHTML = otsHtml || '<p style="color:#888;">No hay órdenes de trabajo</p>';
+                document.getElementById('ultimasOTs').innerHTML = otsHtml || '<p style="color:#888;">No hay órdenes</p>';
 
-                // 6. Equipos críticos
                 const { data: criticos } = await supabase.from('equipos').select('nombre, codigo_completo, proceso').eq('criticidad', 'A').limit(10);
                 let criticosHtml = '<table class="data-table"><thead><tr><th>EQUIPO</th><th>CÓDIGO</th><th>PROCESO</th><th>CRITICIDAD</th></tr></thead><tbody>';
-                criticos?.forEach(e => {
-                    criticosHtml += `<tr><td>${e.nombre}</td><td><code>${e.codigo_completo}</code></td><td>${e.proceso || '-'}</td><td><span class="badge badge-critical">A - CRÍTICO</span></td></tr>`;
-                });
+                criticos?.forEach(e => criticosHtml += `<tr><td>${e.nombre}</td><td><code>${e.codigo_completo}</code></td><td>${e.proceso || '-'}</td><td><span class="badge badge-critical">A - CRÍTICO</span></td></tr>`);
                 criticosHtml += '</tbody></table>';
-                document.getElementById('equiposCriticosList').innerHTML = criticosHtml || '<p style="color:#888;">No hay equipos críticos registrados</p>';
+                document.getElementById('equiposCriticosList').innerHTML = criticosHtml || '<p style="color:#888;">Sin equipos críticos</p>';
 
-                // 7. Actividades recientes
                 const { data: actividades } = await supabase.from('actividades_ot').select('descripcion, tecnico, estado, created_at, ordenes_trabajo(numero_ot)').order('created_at', { ascending: false }).limit(5);
                 let actHtml = '<table class="data-table"><thead><tr><th>OT</th><th>ACTIVIDAD</th><th>TÉCNICO</th><th>ESTADO</th><th>FECHA</th></tr></thead><tbody>';
                 actividades?.forEach(a => {
@@ -455,31 +410,30 @@
                     actHtml += `<tr><td><strong>${a.ordenes_trabajo?.numero_ot || '-'}</strong></td><td>${a.descripcion?.substring(0, 50) || '-'}${a.descripcion?.length > 50 ? '...' : ''}</td><td>${a.tecnico || '-'}</td><td><span class="badge ${estadoClass}">${a.estado || '-'}</span></td><td>${new Date(a.created_at).toLocaleDateString()}</td></tr>`;
                 });
                 actHtml += '</tbody></table>';
-                document.getElementById('actividadesRecientes').innerHTML = actHtml || '<p style="color:#888;">No hay actividades registradas</p>';
+                document.getElementById('actividadesRecientes').innerHTML = actHtml || '<p style="color:#888;">Sin actividades</p>';
 
-            } catch (error) {
-                console.error('Error cargando dashboard:', error);
-            }
+            } catch (error) { console.error('Error:', error); }
         }
 
-        // Verificar sesión
         async function init() {
             const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                window.location.href = 'index.html';
-                return;
-            }
+            if (!session) { window.location.href = 'index.html'; return; }
             
             const { data: perfil } = await supabase.from('perfiles').select('nombre, rol').eq('id', session.user.id).single();
             if (perfil) {
                 document.getElementById('userName').textContent = perfil.nombre || 'Administrador';
                 document.getElementById('userRol').textContent = perfil.rol?.toUpperCase() || 'ADMIN';
+                currentUserRol = perfil.rol;
+                
+                // Mostrar botón de usuarios solo para admin
+                if (currentUserRol === 'admin') {
+                    const usuariosBtn = document.getElementById('navUsuarios');
+                    if (usuariosBtn) usuariosBtn.style.display = 'block';
+                }
             }
             
             document.getElementById('logoutBtn').onclick = logout;
             await loadDashboard();
-            
-            // Recargar cada 30 segundos
             setInterval(loadDashboard, 30000);
         }
 
