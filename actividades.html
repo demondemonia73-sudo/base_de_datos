@@ -3,41 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Actividades - Sistema de Mantenimiento</title>
+    <title>Industrial MS - Actividades</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="styles.css">
     <script src="config.js"></script>
-    <style>
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; border-radius: 20px; padding: 30px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; }
-        .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .close-modal { cursor: pointer; font-size: 24px; }
-        .btn-icon { padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; }
-        .btn-edit { background: #ffc107; }
-        .btn-delete { background: #dc3545; color: white; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
-    </style>
+    <script src="app.js"></script>
 </head>
 <body>
-    <div class="navbar">
-        <h2>🔧 Sistema de Mantenimiento</h2>
-        <div class="nav-menu">
-            <a href="dashboard.html"><button class="nav-btn">📊 Dashboard</button></a>
-            <a href="equipos.html"><button class="nav-btn">🔌 Equipos</button></a>
-            <a href="ordenes.html"><button class="nav-btn">📋 Órdenes OT</button></a>
-            <a href="actividades.html"><button class="nav-btn active">⏱️ Actividades</button></a>
-            <a href="reportes.html"><button class="nav-btn">📈 Reportes</button></a>
-            <button class="nav-btn logout-btn" onclick="logout()">🚪 Salir</button>
+    <div class="header">
+        <div class="logo-area">
+            <div class="logo-icon">🔧</div>
+            <div class="logo-text">
+                <h1>INDUSTRIAL MS</h1>
+                <p>MAINTENANCE SYSTEM</p>
+            </div>
         </div>
-        <div>👤 <span id="userName"></span> | <span id="userRol"></span></div>
+        <div class="nav-menu">
+            <button class="nav-btn" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
+            <button class="nav-btn" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
+            <button class="nav-btn" onclick="location.href='ordenes.html'">📋 OT</button>
+            <button class="nav-btn active" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
+            <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
+            <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
+        </div>
+        <div class="user-info">
+            <div class="user-avatar">👤</div>
+            <div class="user-details">
+                <div class="user-name" id="userName">Usuario</div>
+                <div class="user-role" id="userRol">ADMIN</div>
+            </div>
+        </div>
     </div>
 
     <div class="main-content">
         <div class="card">
             <div class="card-header">
-                <h3>⏱️ Actividades de Mantenimiento</h3>
-                <button class="btn" style="width: auto; padding: 8px 20px;" onclick="openModal()">➕ Nueva Actividad</button>
+                <div class="card-title">⏱️ ACTIVIDADES DE MANTENIMIENTO</div>
+                <button class="btn" onclick="openModal('actividadModal')">➕ NUEVA ACTIVIDAD</button>
             </div>
             <div id="actividadesTable"></div>
         </div>
@@ -46,30 +48,50 @@
     <!-- Modal Nueva Actividad -->
     <div id="actividadModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header"><h3>➕ Nueva Actividad</h3><span class="close-modal" onclick="closeModal()">&times;</span></div>
+            <div class="modal-header">
+                <h3>➕ NUEVA ACTIVIDAD</h3>
+                <span class="close-modal" onclick="closeModal('actividadModal')">&times;</span>
+            </div>
             <form id="actividadForm" onsubmit="event.preventDefault(); crearActividad()">
-                <div class="form-group"><label>OT</label><select id="actividadOtId" required></select></div>
-                <div class="form-group"><label>Descripción *</label><textarea id="actividadDescripcion" rows="3" required></textarea></div>
-                <div class="form-group"><label>Técnico</label><input type="text" id="actividadTecnico"></div>
-                <div class="form-group"><label>Inicio</label><input type="datetime-local" id="actividadInicio"></div>
-                <div class="form-group"><label>Fin</label><input type="datetime-local" id="actividadFin"></div>
-                <div class="form-group"><label>Estado</label><select id="actividadEstado"><option value="Pendiente">Pendiente</option><option value="En Progreso">En Progreso</option><option value="Completada">Completada</option></select></div>
-                <button type="submit" class="btn">Crear Actividad</button>
+                <div class="form-group">
+                    <label>ORDEN DE TRABAJO *</label>
+                    <select id="actividadOtId" required></select>
+                </div>
+                <div class="form-group">
+                    <label>DESCRIPCIÓN *</label>
+                    <textarea id="actividadDescripcion" rows="3" required placeholder="Detalle de la actividad..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>TÉCNICO RESPONSABLE</label>
+                    <input type="text" id="actividadTecnico" placeholder="Nombre del técnico">
+                </div>
+                <div class="form-group">
+                    <label>FECHA/HORA INICIO</label>
+                    <input type="datetime-local" id="actividadInicio">
+                </div>
+                <div class="form-group">
+                    <label>FECHA/HORA FIN</label>
+                    <input type="datetime-local" id="actividadFin">
+                </div>
+                <div class="form-group">
+                    <label>ESTADO</label>
+                    <select id="actividadEstado">
+                        <option value="Pendiente">⏳ PENDIENTE</option>
+                        <option value="En Progreso">🔄 EN PROGRESO</option>
+                        <option value="Completada">✅ COMPLETADA</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn" style="width:100%;">CREAR ACTIVIDAD</button>
             </form>
         </div>
     </div>
 
     <script>
-        let supabase, actividadesData = [], currentUserRol = null;
+        let actividadesData = [];
 
         async function init() {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) { window.location.href = 'index.html'; return; }
-            const { data: perfil } = await supabase.from('perfiles').select('*').eq('id', session.user.id).single();
-            currentUserRol = perfil?.rol || 'operador';
-            document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
-            document.getElementById('userRol').textContent = currentUserRol.toUpperCase();
+            await verificarSesion();
+            document.getElementById('logoutBtn').onclick = logout;
             await cargarActividades();
             await cargarSelectOT();
         }
@@ -82,19 +104,31 @@
         }
 
         function renderizarActividades(actividades) {
-            let html = '<table><thead><tr><th>OT</th><th>Descripción</th><th>Técnico</th><th>Inicio</th><th>Fin</th><th>Horas</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>';
+            let html = '<table class="data-table"><thead><tr><th>OT</th><th>DESCRIPCIÓN</th><th>TÉCNICO</th><th>INICIO</th><th>FIN</th><th>HORAS</th><th>ESTADO</th><th>ACCIONES</th></tr></thead><tbody>';
             actividades.forEach(act => {
-                html += `<tr><td>${act.ordenes_trabajo?.numero_ot || '-'}</td><td>${act.descripcion || '-'}</td><td>${act.tecnico || '-'}</td><td>${act.inicio ? new Date(act.inicio).toLocaleString() : '-'}</td><td>${act.fin ? new Date(act.fin).toLocaleString() : '-'}</td><td>${act.total_horas || '-'}</td><td>${act.estado || 'Pendiente'}</td>
-                <td>${(currentUserRol === 'admin' || currentUserRol === 'supervisor' || currentUserRol === 'tecnico') ? `<button class="btn-icon btn-edit" onclick="editarActividad(${act.id})">✏️</button>` : ''}${currentUserRol === 'admin' ? `<button class="btn-icon btn-delete" onclick="eliminarActividad(${act.id})">🗑️</button>` : ''}</td></tr>`;
+                let estadoClass = act.estado === 'Pendiente' ? 'badge-pending' : (act.estado === 'En Progreso' ? 'badge-progress' : 'badge-completed');
+                html += `<tr>
+                    <td><strong>${act.ordenes_trabajo?.numero_ot || '-'}</strong></td>
+                    <td>${act.descripcion || '-'}</td>
+                    <td>${act.tecnico || '-'}</td>
+                    <td>${act.inicio ? new Date(act.inicio).toLocaleString() : '-'}</td>
+                    <td>${act.fin ? new Date(act.fin).toLocaleString() : '-'}</td>
+                    <td>${act.total_horas || '-'}</td>
+                    <td><span class="badge ${estadoClass}">${act.estado || 'Pendiente'}</span></td>
+                    <td class="action-buttons">
+                        ${currentUserRol === 'admin' || currentUserRol === 'supervisor' || currentUserRol === 'tecnico' ? `<button class="btn-icon btn-edit" onclick="editarActividad(${act.id})">✏️</button>` : ''}
+                        ${currentUserRol === 'admin' ? `<button class="btn-icon btn-delete" onclick="eliminarActividad(${act.id})">🗑️</button>` : ''}
+                    </td>
+                </tr>`;
             });
             html += '</tbody></table>';
-            document.getElementById('actividadesTable').innerHTML = html || '<p>No hay actividades</p>';
+            document.getElementById('actividadesTable').innerHTML = html || '<p style="color:#888;">No hay actividades registradas</p>';
         }
 
         async function cargarSelectOT() {
             const { data } = await supabase.from('ordenes_trabajo').select('id, numero_ot, titulo').order('id', { ascending: false });
             const select = document.getElementById('actividadOtId');
-            select.innerHTML = '<option value="">Seleccione una OT</option>';
+            select.innerHTML = '<option value="">SELECCIONE UNA OT</option>';
             data?.forEach(ot => select.innerHTML += `<option value="${ot.id}">${ot.numero_ot} - ${ot.titulo}</option>`);
         }
 
@@ -102,20 +136,39 @@
             const inicio = document.getElementById('actividadInicio').value;
             const fin = document.getElementById('actividadFin').value;
             let totalHoras = null;
-            if (inicio && fin) { const diff = (new Date(fin) - new Date(inicio)) / (1000 * 60 * 60); totalHoras = diff.toFixed(2); }
-            const nuevaActividad = { orden_trabajo_id: document.getElementById('actividadOtId').value || null, descripcion: document.getElementById('actividadDescripcion').value, tecnico: document.getElementById('actividadTecnico').value, inicio: inicio || null, fin: fin || null, total_horas_numeric: totalHoras, estado: document.getElementById('actividadEstado').value, orden: 0 };
+            if (inicio && fin) totalHoras = ((new Date(fin) - new Date(inicio)) / (1000 * 60 * 60)).toFixed(2);
+            const nuevaActividad = {
+                orden_trabajo_id: document.getElementById('actividadOtId').value || null,
+                descripcion: document.getElementById('actividadDescripcion').value,
+                tecnico: document.getElementById('actividadTecnico').value,
+                inicio: inicio || null,
+                fin: fin || null,
+                total_horas_numeric: totalHoras,
+                estado: document.getElementById('actividadEstado').value,
+                orden: 0
+            };
             if (!nuevaActividad.descripcion) { alert('La descripción es obligatoria'); return; }
             const { error } = await supabase.from('actividades_ot').insert([nuevaActividad]);
             if (error) alert('Error: ' + error.message);
-            else { alert('Actividad creada'); closeModal(); document.getElementById('actividadForm').reset(); cargarActividades(); }
+            else { alert('Actividad creada'); closeModal('actividadModal'); document.getElementById('actividadForm').reset(); cargarActividades(); }
         }
 
-        function openModal() { document.getElementById('actividadModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('actividadModal').style.display = 'none'; }
-        function editarActividad(id) { alert('Editar actividad #' + id); }
-        async function eliminarActividad(id) { if (confirm('¿Eliminar actividad?')) { await supabase.from('actividades_ot').delete().eq('id', id); cargarActividades(); } }
-        async function logout() { await supabase.auth.signOut(); window.location.href = 'index.html'; }
-        
+        async function editarActividad(id) {
+            const { data: act } = await supabase.from('actividades_ot').select('*').eq('id', id).single();
+            const nuevoEstado = prompt('Nuevo estado (Pendiente, En Progreso, Completada):', act.estado);
+            if (nuevoEstado && ['Pendiente', 'En Progreso', 'Completada'].includes(nuevoEstado)) {
+                await supabase.from('actividades_ot').update({ estado: nuevoEstado, updated_at: new Date() }).eq('id', id);
+                cargarActividades();
+            }
+        }
+
+        async function eliminarActividad(id) {
+            if (confirm('¿Eliminar esta actividad?')) {
+                await supabase.from('actividades_ot').delete().eq('id', id);
+                cargarActividades();
+            }
+        }
+
         init();
     </script>
 </body>
