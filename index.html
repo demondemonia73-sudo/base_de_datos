@@ -5,20 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión de Mantenimiento</title>
     
-    <!-- Librerías -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
-    <!-- Estilos y scripts locales -->
     <link rel="stylesheet" href="styles.css">
     <script src="config.js"></script>
     <script src="app.js"></script>
 </head>
 <body>
-    <!-- LOGIN PAGE -->
+    <!-- LOGIN -->
     <div id="loginPage" class="login-container">
         <div class="login-card">
             <h1>🔧 Sistema de Mantenimiento</h1>
@@ -36,9 +34,8 @@
         </div>
     </div>
 
-    <!-- DASHBOARD PRINCIPAL -->
+    <!-- DASHBOARD -->
     <div id="dashboardPage" class="dashboard-container">
-        <!-- NAVBAR -->
         <div class="navbar">
             <h2>🔧 Sistema de Mantenimiento</h2>
             <div class="nav-menu">
@@ -49,81 +46,50 @@
                 <button class="nav-btn" onclick="showSection('reportes')">📈 Reportes</button>
                 <button class="nav-btn logout-btn" onclick="logout()">🚪 Salir</button>
             </div>
-            <div style="color: #666; font-size: 14px;">
-                👤 <span id="userName"></span> | <span id="userRol"></span>
-            </div>
+            <div style="color: #666; font-size: 14px;">👤 <span id="userName"></span> | <span id="userRol"></span></div>
         </div>
 
         <div class="main-content">
-            <!-- SECCIÓN DASHBOARD -->
+            <!-- DASHBOARD -->
             <div id="dashboardSection">
-                <div class="stats-grid" id="statsGrid">
-                    <div class="stat-card">
-                        <h3>📊 Total Equipos</h3>
-                        <div class="number" id="totalEquipos">0</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>⚠️ Equipos Críticos (A)</h3>
-                        <div class="number" id="equiposCriticos">0</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>⏳ OT Pendientes</h3>
-                        <div class="number" id="otsPendientes">0</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>✅ OT Completadas (Mes)</h3>
-                        <div class="number" id="otsCompletadas">0</div>
-                    </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><h3>📊 Total Equipos</h3><div class="number" id="totalEquipos">0</div></div>
+                    <div class="stat-card"><h3>⚠️ Equipos Críticos (A)</h3><div class="number" id="equiposCriticos">0</div></div>
+                    <div class="stat-card"><h3>⏳ OT Pendientes</h3><div class="number" id="otsPendientes">0</div></div>
+                    <div class="stat-card"><h3>✅ OT Completadas (Mes)</h3><div class="number" id="otsCompletadas">0</div></div>
                 </div>
-
-                <div class="card">
-                    <h3>📊 Órdenes por Estado</h3>
-                    <canvas id="estadosChart" style="max-height: 300px;"></canvas>
-                </div>
-
-                <div class="card">
-                    <h3>⚠️ Equipos con Criticidad A (Críticos)</h3>
-                    <div id="equiposCriticosList"></div>
-                </div>
+                <div class="card"><h3>📊 Órdenes por Estado</h3><canvas id="estadosChart" style="max-height: 300px;"></canvas></div>
+                <div class="card"><h3>⚠️ Equipos con Criticidad A (Críticos)</h3><div id="equiposCriticosList"></div></div>
             </div>
 
-            <!-- SECCIÓN EQUIPOS -->
+            <!-- EQUIPOS -->
             <div id="equiposSection" style="display:none;">
                 <div class="card">
                     <div class="card-header">
                         <h3>📋 Catálogo de Equipos</h3>
-                        <div>
-                            <button class="btn btn-success" style="width: auto; padding: 8px 20px;" onclick="exportarEquiposExcel()">📊 Exportar Excel</button>
-                            <button class="btn btn-danger" style="width: auto; padding: 8px 20px;" onclick="exportarEquiposPDF()">📄 Exportar PDF</button>
-                        </div>
+                        <div><button class="btn btn-success" style="width: auto; padding: 8px 20px;" onclick="exportarEquiposExcel()">📊 Excel</button>
+                        <button class="btn btn-danger" style="width: auto; padding: 8px 20px;" onclick="exportarEquiposPDF()">📄 PDF</button></div>
                     </div>
                     <div class="filter-bar">
                         <input type="text" id="searchEquipo" placeholder="🔍 Buscar equipo..." onkeyup="filtrarEquipos()">
                         <select id="filterCriticidad" onchange="filtrarEquipos()">
-                            <option value="">📊 Todas las criticidades</option>
-                            <option value="A">🔴 Crítico (A)</option>
-                            <option value="B">🟡 Moderado (B)</option>
-                            <option value="C">🟢 Bajo (C)</option>
+                            <option value="">📊 Todas</option><option value="A">🔴 Crítico (A)</option>
+                            <option value="B">🟡 Moderado (B)</option><option value="C">🟢 Bajo (C)</option>
                         </select>
                     </div>
                     <div id="equiposTable"></div>
                 </div>
             </div>
 
-            <!-- SECCIÓN ÓRDENES DE TRABAJO -->
+            <!-- ÓRDENES -->
             <div id="ordenesSection" style="display:none;">
                 <div class="card">
-                    <div class="card-header">
-                        <h3>📋 Órdenes de Trabajo</h3>
-                        <button class="btn" style="width: auto; padding: 8px 20px;" onclick="openModal('otModal')">➕ Nueva OT</button>
-                    </div>
+                    <div class="card-header"><h3>📋 Órdenes de Trabajo</h3><button class="btn" style="width: auto; padding: 8px 20px;" onclick="openModal('otModal')">➕ Nueva OT</button></div>
                     <div class="filter-bar">
                         <input type="text" id="searchOT" placeholder="🔍 Buscar OT..." onkeyup="filtrarOTs()">
                         <select id="filterEstadoOT" onchange="filtrarOTs()">
-                            <option value="">📊 Todos los estados</option>
-                            <option value="Pendiente">⏳ Pendiente</option>
-                            <option value="En Progreso">🔄 En Progreso</option>
-                            <option value="Completada">✅ Completada</option>
+                            <option value="">📊 Todos</option><option value="Pendiente">⏳ Pendiente</option>
+                            <option value="En Progreso">🔄 En Progreso</option><option value="Completada">✅ Completada</option>
                             <option value="Cancelada">❌ Cancelada</option>
                         </select>
                     </div>
@@ -131,217 +97,73 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN ACTIVIDADES -->
+            <!-- ACTIVIDADES -->
             <div id="actividadesSection" style="display:none;">
                 <div class="card">
-                    <div class="card-header">
-                        <h3>⏱️ Actividades de Mantenimiento</h3>
-                        <button class="btn" style="width: auto; padding: 8px 20px;" onclick="openModal('actividadModal')">➕ Nueva Actividad</button>
-                    </div>
+                    <div class="card-header"><h3>⏱️ Actividades</h3><button class="btn" style="width: auto; padding: 8px 20px;" onclick="openModal('actividadModal')">➕ Nueva Actividad</button></div>
                     <div id="actividadesTable"></div>
                 </div>
             </div>
 
-            <!-- SECCIÓN REPORTES -->
+            <!-- REPORTES -->
             <div id="reportesSection" style="display:none;">
                 <div class="card">
                     <h3>📊 Generar Reportes</h3>
                     <div class="stats-grid" style="margin-top: 20px;">
-                        <div class="stat-card">
-                            <h3>📋 Equipos</h3>
-                            <button class="btn btn-success" style="margin-top: 15px;" onclick="exportarEquiposExcel()">📊 Excel</button>
-                            <button class="btn btn-danger" style="margin-top: 10px;" onclick="exportarEquiposPDF()">📄 PDF</button>
-                        </div>
-                        <div class="stat-card">
-                            <h3>📋 Órdenes de Trabajo</h3>
-                            <button class="btn btn-success" style="margin-top: 15px;" onclick="exportarOTsExcel()">📊 Excel</button>
-                            <button class="btn btn-danger" style="margin-top: 10px;" onclick="exportarOTsPDF()">📄 PDF</button>
-                        </div>
-                        <div class="stat-card">
-                            <h3>⏱️ Actividades</h3>
-                            <button class="btn btn-success" style="margin-top: 15px;" onclick="exportarActividadesExcel()">📊 Excel</button>
-                        </div>
+                        <div class="stat-card"><h3>📋 Equipos</h3><button class="btn btn-success" style="margin-top: 15px;" onclick="exportarEquiposExcel()">📊 Excel</button><button class="btn btn-danger" style="margin-top: 10px;" onclick="exportarEquiposPDF()">📄 PDF</button></div>
+                        <div class="stat-card"><h3>📋 Órdenes</h3><button class="btn btn-success" style="margin-top: 15px;" onclick="exportarOTsExcel()">📊 Excel</button><button class="btn btn-danger" style="margin-top: 10px;" onclick="exportarOTsPDF()">📄 PDF</button></div>
+                        <div class="stat-card"><h3>⏱️ Actividades</h3><button class="btn btn-success" style="margin-top: 15px;" onclick="exportarActividadesExcel()">📊 Excel</button></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ===================================================== -->
-    <!-- MODALES -->
-    <!-- ===================================================== -->
+    <!-- MODAL NUEVA OT -->
+    <div id="otModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>➕ Nueva OT</h3><span class="close-modal" onclick="closeModal('otModal')">&times;</span></div>
+    <form id="otForm" onsubmit="event.preventDefault(); crearOT()">
+        <div class="form-group"><label>Título *</label><input type="text" id="otTitulo" required></div>
+        <div class="form-group"><label>Equipo</label><select id="otEquipoId"></select></div>
+        <div class="form-group"><label>Descripción</label><textarea id="otDescripcion" rows="3"></textarea></div>
+        <div class="form-group"><label>Prioridad</label><select id="otPrioridad"><option value="Baja">🟢 Baja</option><option value="Normal" selected>🔵 Normal</option><option value="Alta">🟠 Alta</option><option value="Urgente">🔴 Urgente</option></select></div>
+        <div class="form-group"><label>Tipo</label><select id="otTipo"><option value="Preventivo">🔧 Preventivo</option><option value="Correctivo">🛠️ Correctivo</option><option value="Predictivo">📊 Predictivo</option><option value="Emergencia">🚨 Emergencia</option></select></div>
+        <button type="submit" class="btn">Crear OT</button>
+    </form></div></div>
 
-    <!-- Modal Nueva OT -->
-    <div id="otModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>➕ Nueva Orden de Trabajo</h3>
-                <span class="close-modal" onclick="closeModal('otModal')">&times;</span>
-            </div>
-            <form id="otForm" onsubmit="event.preventDefault(); crearOT()">
-                <div class="form-group">
-                    <label>Título *</label>
-                    <input type="text" id="otTitulo" required>
-                </div>
-                <div class="form-group">
-                    <label>Equipo</label>
-                    <select id="otEquipoId"></select>
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea id="otDescripcion" rows="3"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Prioridad</label>
-                    <select id="otPrioridad">
-                        <option value="Baja">🟢 Baja</option>
-                        <option value="Normal" selected>🔵 Normal</option>
-                        <option value="Alta">🟠 Alta</option>
-                        <option value="Urgente">🔴 Urgente</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Tipo de Mantenimiento</label>
-                    <select id="otTipo">
-                        <option value="Preventivo">🔧 Preventivo</option>
-                        <option value="Correctivo">🛠️ Correctivo</option>
-                        <option value="Predictivo">📊 Predictivo</option>
-                        <option value="Emergencia">🚨 Emergencia</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn">Crear OT</button>
-            </form>
-        </div>
-    </div>
+    <!-- MODAL VER OT -->
+    <div id="viewOTModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>👁️ Detalle OT</h3><span class="close-modal" onclick="closeModal('viewOTModal')">&times;</span></div><div id="viewOTContent"></div></div></div>
 
-    <!-- Modal Ver OT -->
-    <div id="viewOTModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>👁️ Detalle de Orden de Trabajo</h3>
-                <span class="close-modal" onclick="closeModal('viewOTModal')">&times;</span>
-            </div>
-            <div id="viewOTContent"></div>
-        </div>
-    </div>
+    <!-- MODAL EDITAR OT -->
+    <div id="editOTModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>✏️ Editar OT</h3><span class="close-modal" onclick="closeModal('editOTModal')">&times;</span></div>
+    <form onsubmit="event.preventDefault(); actualizarOT()"><input type="hidden" id="editOtId">
+        <div class="form-group"><label>Título</label><input type="text" id="editOtTitulo" required></div>
+        <div class="form-group"><label>Descripción</label><textarea id="editOtDescripcion" rows="3"></textarea></div>
+        <div class="form-group"><label>Prioridad</label><select id="editOtPrioridad"><option value="Baja">Baja</option><option value="Normal">Normal</option><option value="Alta">Alta</option><option value="Urgente">Urgente</option></select></div>
+        <div class="form-group"><label>Estado</label><select id="editOtEstado"><option value="Pendiente">Pendiente</option><option value="En Progreso">En Progreso</option><option value="Completada">Completada</option><option value="Cancelada">Cancelada</option></select></div>
+        <button type="submit" class="btn">Actualizar OT</button>
+    </form></div></div>
 
-    <!-- Modal Editar OT -->
-    <div id="editOTModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>✏️ Editar Orden de Trabajo</h3>
-                <span class="close-modal" onclick="closeModal('editOTModal')">&times;</span>
-            </div>
-            <form onsubmit="event.preventDefault(); actualizarOT()">
-                <input type="hidden" id="editOtId">
-                <div class="form-group">
-                    <label>Título</label>
-                    <input type="text" id="editOtTitulo" required>
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea id="editOtDescripcion" rows="3"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Prioridad</label>
-                    <select id="editOtPrioridad">
-                        <option value="Baja">Baja</option>
-                        <option value="Normal">Normal</option>
-                        <option value="Alta">Alta</option>
-                        <option value="Urgente">Urgente</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Estado</label>
-                    <select id="editOtEstado">
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="En Progreso">En Progreso</option>
-                        <option value="Completada">Completada</option>
-                        <option value="Cancelada">Cancelada</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn">Actualizar OT</button>
-            </form>
-        </div>
-    </div>
+    <!-- MODAL NUEVA ACTIVIDAD -->
+    <div id="actividadModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>➕ Nueva Actividad</h3><span class="close-modal" onclick="closeModal('actividadModal')">&times;</span></div>
+    <form id="actividadForm" onsubmit="event.preventDefault(); crearActividad()">
+        <div class="form-group"><label>OT</label><select id="actividadOtId"></select></div>
+        <div class="form-group"><label>Descripción *</label><textarea id="actividadDescripcion" rows="3" required></textarea></div>
+        <div class="form-group"><label>Técnico</label><input type="text" id="actividadTecnico"></div>
+        <div class="form-group"><label>Inicio</label><input type="datetime-local" id="actividadInicio"></div>
+        <div class="form-group"><label>Fin</label><input type="datetime-local" id="actividadFin"></div>
+        <div class="form-group"><label>Estado</label><select id="actividadEstado"><option value="Pendiente">Pendiente</option><option value="En Progreso">En Progreso</option><option value="Completada">Completada</option></select></div>
+        <button type="submit" class="btn">Crear Actividad</button>
+    </form></div></div>
 
-    <!-- Modal Nueva Actividad -->
-    <div id="actividadModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>➕ Nueva Actividad</h3>
-                <span class="close-modal" onclick="closeModal('actividadModal')">&times;</span>
-            </div>
-            <form id="actividadForm" onsubmit="event.preventDefault(); crearActividad()">
-                <div class="form-group">
-                    <label>Orden de Trabajo</label>
-                    <select id="actividadOtId"></select>
-                </div>
-                <div class="form-group">
-                    <label>Descripción *</label>
-                    <textarea id="actividadDescripcion" rows="3" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Técnico</label>
-                    <input type="text" id="actividadTecnico">
-                </div>
-                <div class="form-group">
-                    <label>Fecha y Hora de Inicio</label>
-                    <input type="datetime-local" id="actividadInicio">
-                </div>
-                <div class="form-group">
-                    <label>Fecha y Hora de Fin</label>
-                    <input type="datetime-local" id="actividadFin">
-                </div>
-                <div class="form-group">
-                    <label>Estado</label>
-                    <select id="actividadEstado">
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="En Progreso">En Progreso</option>
-                        <option value="Completada">Completada</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn">Crear Actividad</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Editar Actividad -->
-    <div id="editActividadModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>✏️ Editar Actividad</h3>
-                <span class="close-modal" onclick="closeModal('editActividadModal')">&times;</span>
-            </div>
-            <form onsubmit="event.preventDefault(); actualizarActividad()">
-                <input type="hidden" id="editActividadId">
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea id="editActividadDescripcion" rows="3" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Técnico</label>
-                    <input type="text" id="editActividadTecnico">
-                </div>
-                <div class="form-group">
-                    <label>Fecha y Hora de Inicio</label>
-                    <input type="datetime-local" id="editActividadInicio">
-                </div>
-                <div class="form-group">
-                    <label>Fecha y Hora de Fin</label>
-                    <input type="datetime-local" id="editActividadFin">
-                </div>
-                <div class="form-group">
-                    <label>Estado</label>
-                    <select id="editActividadEstado">
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="En Progreso">En Progreso</option>
-                        <option value="Completada">Completada</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn">Actualizar Actividad</button>
-            </form>
-        </div>
-    </div>
+    <!-- MODAL EDITAR ACTIVIDAD -->
+    <div id="editActividadModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>✏️ Editar Actividad</h3><span class="close-modal" onclick="closeModal('editActividadModal')">&times;</span></div>
+    <form onsubmit="event.preventDefault(); actualizarActividad()"><input type="hidden" id="editActividadId">
+        <div class="form-group"><label>Descripción</label><textarea id="editActividadDescripcion" rows="3" required></textarea></div>
+        <div class="form-group"><label>Técnico</label><input type="text" id="editActividadTecnico"></div>
+        <div class="form-group"><label>Inicio</label><input type="datetime-local" id="editActividadInicio"></div>
+        <div class="form-group"><label>Fin</label><input type="datetime-local" id="editActividadFin"></div>
+        <div class="form-group"><label>Estado</label><select id="editActividadEstado"><option value="Pendiente">Pendiente</option><option value="En Progreso">En Progreso</option><option value="Completada">Completada</option></select></div>
+        <button type="submit" class="btn">Actualizar Actividad</button>
+    </form></div></div>
 </body>
 </html>
