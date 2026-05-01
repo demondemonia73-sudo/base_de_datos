@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Sistema de Mantenimiento</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
     <style>
         * {
             margin: 0;
@@ -56,17 +55,32 @@
             color: #333;
             font-weight: 500;
         }
-        .form-group input {
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-wrapper input {
             width: 100%;
-            padding: 12px 15px;
+            padding: 12px 45px 12px 15px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
             font-size: 14px;
             transition: all 0.3s;
         }
-        .form-group input:focus {
+        .password-wrapper input:focus {
             outline: none;
             border-color: #667eea;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            cursor: pointer;
+            font-size: 18px;
+            user-select: none;
+            background: none;
+            border: none;
+            font-size: 20px;
         }
         .btn {
             width: 100%;
@@ -83,6 +97,11 @@
         .btn:hover {
             transform: translateY(-2px);
         }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
         .error-message {
             background: #f8d7da;
             color: #721c24;
@@ -90,6 +109,7 @@
             border-radius: 8px;
             margin-bottom: 20px;
             display: none;
+            font-size: 14px;
         }
         .loading {
             text-align: center;
@@ -105,6 +125,29 @@
             margin-bottom: 20px;
             display: none;
         }
+        .info-message {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 13px;
+            text-align: center;
+        }
+        .test-credentials {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        .test-credentials span {
+            font-weight: bold;
+            color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -112,23 +155,36 @@
         <div class="login-card">
             <h1>🔧 Sistema de Mantenimiento</h1>
             <p class="subtitle">Control de Equipos y Órdenes de Trabajo</p>
+            
             <div id="loginError" class="error-message"></div>
             <div id="loginSuccess" class="success-message"></div>
-            <div id="loadingMessage" class="loading">⏳ Verificando...</div>
+            <div id="loginInfo" class="info-message"></div>
+            <div id="loadingMessage" class="loading">⏳ Verificando credenciales...</div>
+            
             <div class="form-group">
                 <label>📧 Email</label>
-                <input type="email" id="loginEmail" placeholder="admin@demo.com">
+                <input type="email" id="loginEmail" placeholder="usuario@empresa.com" autocomplete="email">
             </div>
+            
             <div class="form-group">
                 <label>🔒 Contraseña</label>
-                <input type="password" id="loginPassword" placeholder="••••••••">
+                <div class="password-wrapper">
+                    <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+                    <button type="button" class="toggle-password" id="togglePassword" title="Mostrar/Ocultar contraseña">👁️</button>
+                </div>
             </div>
+            
             <button class="btn" id="loginBtn">Ingresar al Sistema</button>
+            
+            <div class="test-credentials">
+                📋 <strong>Credenciales de prueba:</strong><br>
+                Email: <span>admin@demo.com</span> | Contraseña: <span>Admin123456</span>
+            </div>
         </div>
     </div>
 
     <script>
-        // Configuración
+        // Configuración de Supabase
         const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
         
@@ -141,7 +197,16 @@
         const passwordInput = document.getElementById('loginPassword');
         const errorDiv = document.getElementById('loginError');
         const successDiv = document.getElementById('loginSuccess');
+        const infoDiv = document.getElementById('loginInfo');
         const loadingDiv = document.getElementById('loadingMessage');
+        const togglePassword = document.getElementById('togglePassword');
+
+        // Mostrar/Ocultar contraseña
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? '👁️' : '🙈';
+        });
 
         // Función de login
         async function login() {
@@ -151,10 +216,27 @@
             // Ocultar mensajes anteriores
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
+            infoDiv.style.display = 'none';
             
             // Validar campos
-            if (!email || !password) {
-                errorDiv.textContent = '❌ Ingrese email y contraseña';
+            if (!email) {
+                errorDiv.textContent = '❌ Por favor ingrese su email';
+                errorDiv.style.display = 'block';
+                emailInput.focus();
+                return;
+            }
+            
+            if (!password) {
+                errorDiv.textContent = '❌ Por favor ingrese su contraseña';
+                errorDiv.style.display = 'block';
+                passwordInput.focus();
+                return;
+            }
+
+            // Validar formato de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                errorDiv.textContent = '❌ El formato del email no es válido';
                 errorDiv.style.display = 'block';
                 return;
             }
@@ -162,6 +244,7 @@
             // Mostrar loading
             loadingDiv.style.display = 'block';
             loginBtn.disabled = true;
+            loginBtn.textContent = '🔄 Verificando...';
 
             try {
                 // Intentar login
@@ -171,14 +254,24 @@
                 });
 
                 if (error) {
-                    if (error.message === 'Invalid login credentials') {
-                        errorDiv.textContent = '❌ Email o contraseña incorrectos. Use: admin@demo.com / Admin123456';
-                    } else {
-                        errorDiv.textContent = '❌ Error: ' + error.message;
-                    }
-                    errorDiv.style.display = 'block';
                     loadingDiv.style.display = 'none';
                     loginBtn.disabled = false;
+                    loginBtn.textContent = 'Ingresar al Sistema';
+                    
+                    if (error.message === 'Invalid login credentials') {
+                        errorDiv.innerHTML = '❌ <strong>Email o contraseña incorrectos</strong><br>Verifique sus credenciales o contacte al administrador.';
+                        errorDiv.style.display = 'block';
+                        
+                        // Mostrar credenciales de ayuda
+                        infoDiv.innerHTML = '💡 <strong>Credenciales válidas:</strong> admin@demo.com / Admin123456';
+                        infoDiv.style.display = 'block';
+                    } else if (error.message.includes('Email not confirmed')) {
+                        errorDiv.textContent = '❌ Su email no ha sido confirmado. Revise su bandeja de entrada.';
+                        errorDiv.style.display = 'block';
+                    } else {
+                        errorDiv.textContent = '❌ Error: ' + error.message;
+                        errorDiv.style.display = 'block';
+                    }
                     return;
                 }
 
@@ -191,37 +284,54 @@
                         .single();
 
                     if (perfilError) {
-                        errorDiv.textContent = '⚠️ Usuario sin perfil asignado. Contacte al administrador.';
-                        errorDiv.style.display = 'block';
-                        await supabase.auth.signOut();
                         loadingDiv.style.display = 'none';
                         loginBtn.disabled = false;
+                        loginBtn.textContent = 'Ingresar al Sistema';
+                        errorDiv.innerHTML = '⚠️ <strong>Usuario sin perfil asignado</strong><br>Contacte al administrador para activar su cuenta.';
+                        errorDiv.style.display = 'block';
+                        await supabase.auth.signOut();
                         return;
                     }
 
                     // Login exitoso
-                    successDiv.textContent = '✅ Login exitoso! Redirigiendo...';
+                    successDiv.innerHTML = '✅ <strong>¡Bienvenido ' + (perfil.nombre || 'Usuario') + '!</strong><br>Redirigiendo al panel principal...';
                     successDiv.style.display = 'block';
+                    loadingDiv.style.display = 'none';
                     
                     // Redirigir al dashboard
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
-                    }, 1000);
+                    }, 1500);
                 }
 
             } catch (err) {
-                errorDiv.textContent = '❌ Error de conexión: ' + err.message;
-                errorDiv.style.display = 'block';
                 loadingDiv.style.display = 'none';
                 loginBtn.disabled = false;
+                loginBtn.textContent = 'Ingresar al Sistema';
+                errorDiv.textContent = '❌ Error de conexión: ' + err.message;
+                errorDiv.style.display = 'block';
+                console.error('Error de conexión:', err);
             }
         }
 
         // Verificar si ya hay sesión activa
         async function checkSession() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                window.location.href = 'dashboard.html';
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    // Verificar que el perfil existe
+                    const { data: perfil } = await supabase
+                        .from('perfiles')
+                        .select('id')
+                        .eq('id', session.user.id)
+                        .single();
+                    
+                    if (perfil) {
+                        window.location.href = 'dashboard.html';
+                    }
+                }
+            } catch (err) {
+                console.log('No hay sesión activa');
             }
         }
 
@@ -229,6 +339,10 @@
         loginBtn.onclick = login;
         emailInput.onkeypress = (e) => { if (e.key === 'Enter') login(); };
         passwordInput.onkeypress = (e) => { if (e.key === 'Enter') login(); };
+
+        // Auto-completar credenciales de prueba (opcional)
+        emailInput.value = 'admin@demo.com';
+        passwordInput.value = 'Admin123456';
 
         // Iniciar
         checkSession();
