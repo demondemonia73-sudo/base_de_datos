@@ -1,1 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipos - Sistema de Mantenimiento</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+    <style>
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-bar input, .filter-bar select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; }
+        .badge-A { background: #dc3545; color: white; padding: 4px 8px; border-radius: 20px; font-size: 12px; }
+        .badge-B { background: #ffc107; color: #333; padding: 4px 8px; border-radius: 20px; font-size: 12px; }
+        .badge-C { background: #28a745; color: white; padding: 4px 8px; border-radius: 20px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; overflow-x: auto; display: block; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h2>🔧 Sistema de Mantenimiento</h2>
+        <div class="nav-menu">
+            <a href="dashboard.html"><button class="nav-btn">📊 Dashboard</button></a>
+            <a href="equipos.html"><button class="nav-btn active">🔌 Equipos</button></a>
+            <a href="ordenes.html"><button class="nav-btn">📋 Órdenes OT</button></a>
+            <a href="actividades.html"><button class="nav-btn">⏱️ Actividades</button></a>
+            <a href="reportes.html"><button class="nav-btn">📈 Reportes</button></a>
+            <button class="nav-btn logout-btn" onclick="logout()">🚪 Salir</button>
+        </div>
+        <div>👤 <span id="userName"></span> | <span id="userRol"></span></div>
+    </div>
 
+    <div class="main-content">
+        <div class="card">
+            <div class="card-header">
+                <h3>📋 Catálogo de Equipos</h3>
+                <div>
+                    <button class="btn btn-success" style="width: auto; padding: 8px 20px;" onclick="exportarExcel()">📊 Exportar Excel</button>
+                    <button class="btn btn-danger" style="width: auto; padding: 8px 20px;" onclick="exportarPDF()">📄 Exportar PDF</button>
+                </div>
+            </div>
+            <div class="filter-bar">
+                <input type="text" id="searchEquipo" placeholder="🔍 Buscar equipo..." onkeyup="filtrarEquipos()">
+                <select id="filterCriticidad" onchange="filtrarEquipos()">
+                    <option value="">📊 Todas las criticidades</option>
+                    <option value="A">🔴 Crítico (A)</option>
+                    <option value="B">🟡 Moderado (B)</option>
+                    <option value="C">🟢 Bajo (C)</option>
+                </select>
+            </div>
+            <div id="equiposTable"></div>
+        </div>
+    </div>
+
+    <script>
+        let supabase, equiposData = [];
+
+        async function init() {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'index.html'; return; }
+            
+            const { data: perfil } = await supabase.from('perfiles').select('*').eq('id', session.user.id).single();
+            document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
+            document.getElementById('userRol').textContent = perfil?.rol?.toUpperCase() || 'OPERADOR';
+            
+            await cargarEquipos();
+        }
+
+        async function cargarEquipos() {
+            const { data, error } = await supabase.from('equipos').select('*').order('numero', { ascending: true });
+            if (error) console.error(error);
+            equiposData = data || [];
+            renderizarEquipos(equiposData);
+        }
+
+        function renderizarEquipos(equipos) {
+            let html = '<table><thead><tr><th>N°</th><th>Nombre</th><th>Código</th><th>Centro Costo</th><th>Proceso</th><th>Criticidad</th></tr></thead><tbody>';
+            equipos.forEach(e => {
+                let criticidadClass = e.criticidad === 'A' ? 'badge-A' : (e.criticidad === 'B' ? 'badge-B' : 'badge-C');
+                html += `<tr><td>${e.numero || '-'}</td><td>${e.nombre || '-'}</td><td>${e.codigo_completo || '-'}</td><td>${e.centro_costo || '-'}</td><td>${e.proceso || '-'}</td><td><span class="${criticidadClass}">${e.criticidad || '-'}</span></td></tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('equiposTable').innerHTML = html || '<p>No hay equipos cargados</p>';
+        }
+
+        function filtrarEquipos() {
+            const search = document.getElementById('searchEquipo').value.toLowerCase();
+            const criticidad = document.getElementById('filterCriticidad').value;
+            let filtered = equiposData;
+            if (search) filtered = filtered.filter(e => e.nombre?.toLowerCase().includes(search) || e.codigo_completo?.toLowerCase().includes(search));
+            if (criticidad) filtered = filtered.filter(e => e.criticidad === criticidad);
+            renderizarEquipos(filtered);
+        }
+
+        async function exportarExcel() {
+            const { data } = await supabase.from('equipos').select('*');
+            const ws = XLSX.utils.json_to_sheet(data || []);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Equipos');
+            XLSX.writeFile(wb, `equipos_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        async function exportarPDF() {
+            const { data } = await supabase.from('equipos').select('numero, nombre, codigo_completo, criticidad');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape');
+            doc.autoTable({ head: [['N°', 'Equipo', 'Código', 'Criticidad']], body: (data || []).map(e => [e.numero, e.nombre, e.codigo_completo, e.criticidad]), theme: 'striped', styles: { fontSize: 8 }, headStyles: { fillColor: [102, 126, 234] } });
+            doc.save(`equipos_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        async function logout() { await supabase.auth.signOut(); window.location.href = 'index.html'; }
+        
+        init();
+    </script>
+</body>
+</html>
