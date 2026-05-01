@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema de Mantenimiento</title>
+    <title>Login + Pruebas - Sistema de Mantenimiento</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -28,7 +28,7 @@
             border-radius: 20px;
             padding: 40px;
             width: 100%;
-            max-width: 450px;
+            max-width: 500px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             animation: fadeIn 0.5s ease;
         }
@@ -44,7 +44,7 @@
         .login-card .subtitle {
             text-align: center;
             color: #666;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         .form-group {
             margin-bottom: 20px;
@@ -77,10 +77,8 @@
             right: 15px;
             cursor: pointer;
             font-size: 18px;
-            user-select: none;
             background: none;
             border: none;
-            font-size: 20px;
         }
         .btn {
             width: 100%;
@@ -100,7 +98,58 @@
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ddd;
+        }
+        .status-connected {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .status-disconnected {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .status-testing {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        .status-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .console-log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .console-log p {
+            margin: 5px 0;
+            border-bottom: 1px solid #333;
+            padding: 5px 0;
+        }
+        .console-log .success { color: #4ec9b0; }
+        .console-log .error { color: #f48771; }
+        .console-log .info { color: #9cdcfe; }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-test {
+            background: #6c757d;
+            font-size: 12px;
+            padding: 8px;
         }
         .error-message {
             background: #f8d7da;
@@ -108,13 +157,6 @@
             padding: 10px;
             border-radius: 8px;
             margin-bottom: 20px;
-            display: none;
-            font-size: 14px;
-        }
-        .loading {
-            text-align: center;
-            margin-top: 20px;
-            color: #667eea;
             display: none;
         }
         .success-message {
@@ -125,28 +167,11 @@
             margin-bottom: 20px;
             display: none;
         }
-        .info-message {
-            background: #d1ecf1;
-            color: #0c5460;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-            font-size: 13px;
+        .loading {
             text-align: center;
-        }
-        .test-credentials {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-        }
-        .test-credentials span {
-            font-weight: bold;
+            margin: 15px 0;
             color: #667eea;
+            display: none;
         }
     </style>
 </head>
@@ -154,198 +179,279 @@
     <div class="login-container">
         <div class="login-card">
             <h1>🔧 Sistema de Mantenimiento</h1>
-            <p class="subtitle">Control de Equipos y Órdenes de Trabajo</p>
+            <p class="subtitle">Panel de Control de Equipos</p>
             
+            <!-- Estado de conexión -->
+            <div id="connectionStatus" class="status-card status-testing">
+                <div class="status-title">🔌 Estado de conexión:</div>
+                <div id="connectionText">🔄 Probando conexión con Supabase...</div>
+            </div>
+            
+            <!-- Mensajes -->
             <div id="loginError" class="error-message"></div>
             <div id="loginSuccess" class="success-message"></div>
-            <div id="loginInfo" class="info-message"></div>
-            <div id="loadingMessage" class="loading">⏳ Verificando credenciales...</div>
+            <div id="loadingMessage" class="loading">⏳ Procesando...</div>
             
+            <!-- Formulario -->
             <div class="form-group">
                 <label>📧 Email</label>
-                <input type="email" id="loginEmail" placeholder="usuario@empresa.com" autocomplete="email">
+                <input type="email" id="loginEmail" placeholder="admin@demo.com">
             </div>
             
             <div class="form-group">
                 <label>🔒 Contraseña</label>
                 <div class="password-wrapper">
-                    <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
-                    <button type="button" class="toggle-password" id="togglePassword" title="Mostrar/Ocultar contraseña">👁️</button>
+                    <input type="password" id="loginPassword" placeholder="••••••••">
+                    <button type="button" class="toggle-password" id="togglePassword">👁️</button>
                 </div>
             </div>
             
             <button class="btn" id="loginBtn">Ingresar al Sistema</button>
             
-            <div class="test-credentials">
-                📋 <strong>Credenciales de prueba:</strong><br>
-                Email: <span>admin@demo.com</span> | Contraseña: <span>Admin123456</span>
+            <!-- Botones de prueba -->
+            <div class="test-buttons">
+                <button class="btn btn-test" id="testLoginBtn">🧪 Probar Login (Consola)</button>
+                <button class="btn btn-test" id="testConnectionBtn">🔍 Probar Conexión</button>
+            </div>
+            
+            <!-- Consola de logs -->
+            <div class="console-log" id="consoleLog">
+                <p class="info">📋 [Sistema] Inicializando...</p>
+            </div>
+            
+            <div class="test-credentials" style="margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 10px; font-size: 12px; text-align: center;">
+                📋 <strong>Credenciales de prueba:</strong> admin@demo.com / Admin123456
             </div>
         </div>
     </div>
 
     <script>
-        // Configuración de Supabase
+        // =====================================================
+        // CONFIGURACIÓN
+        // =====================================================
         const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
         
         // Inicializar Supabase
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // Elementos del DOM
+        // Elementos DOM
         const loginBtn = document.getElementById('loginBtn');
+        const testLoginBtn = document.getElementById('testLoginBtn');
+        const testConnectionBtn = document.getElementById('testConnectionBtn');
         const emailInput = document.getElementById('loginEmail');
         const passwordInput = document.getElementById('loginPassword');
         const errorDiv = document.getElementById('loginError');
         const successDiv = document.getElementById('loginSuccess');
-        const infoDiv = document.getElementById('loginInfo');
         const loadingDiv = document.getElementById('loadingMessage');
         const togglePassword = document.getElementById('togglePassword');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const connectionText = document.getElementById('connectionText');
+        const consoleLog = document.getElementById('consoleLog');
 
-        // Mostrar/Ocultar contraseña
-        togglePassword.addEventListener('click', function() {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            this.textContent = type === 'password' ? '👁️' : '🙈';
-        });
+        // Función para agregar mensajes a la consola visual
+        function addConsoleMessage(message, type = 'info') {
+            const p = document.createElement('p');
+            p.className = type;
+            const timestamp = new Date().toLocaleTimeString();
+            p.innerHTML = `[${timestamp}] ${message}`;
+            consoleLog.appendChild(p);
+            p.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            
+            // También mostrar en consola real
+            if (type === 'error') console.error(message);
+            else if (type === 'success') console.log('✅', message);
+            else console.log('📋', message);
+        }
 
-        // Función de login
-        async function login() {
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
+        // Probar conexión a Supabase
+        async function testConnection() {
+            addConsoleMessage('🔄 Probando conexión a Supabase...', 'info');
+            connectionStatus.className = 'status-card status-testing';
+            connectionText.innerHTML = '🔄 Probando conexión con Supabase...';
+            
+            try {
+                // Probar conexión haciendo una consulta simple
+                const { data, error } = await supabase.from('perfiles').select('count', { count: 'exact', head: true });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                connectionStatus.className = 'status-card status-connected';
+                connectionText.innerHTML = '✅ Conectado a Supabase correctamente';
+                addConsoleMessage('✅ Conexión exitosa a Supabase', 'success');
+                
+                // Probar tabla equipos
+                const { count: equiposCount } = await supabase.from('equipos').select('*', { count: 'exact', head: true });
+                addConsoleMessage(`📊 Tabla "equipos" tiene ${equiposCount || 0} registros`, equiposCount > 0 ? 'success' : 'info');
+                
+                // Probar tabla ordenes_trabajo
+                const { count: otsCount } = await supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true });
+                addConsoleMessage(`📊 Tabla "ordenes_trabajo" tiene ${otsCount || 0} registros`, otsCount > 0 ? 'success' : 'info');
+                
+                return true;
+                
+            } catch (error) {
+                connectionStatus.className = 'status-card status-disconnected';
+                connectionText.innerHTML = '❌ Error de conexión: ' + error.message;
+                addConsoleMessage(`❌ Error de conexión: ${error.message}`, 'error');
+                return false;
+            }
+        }
 
-            // Ocultar mensajes anteriores
+        // Función de login con logs detallados
+        async function doLogin(email, password, fromTest = false) {
+            addConsoleMessage(`🔐 Intentando login con email: ${email}`, 'info');
+            
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
-            infoDiv.style.display = 'none';
-            
-            // Validar campos
-            if (!email) {
-                errorDiv.textContent = '❌ Por favor ingrese su email';
-                errorDiv.style.display = 'block';
-                emailInput.focus();
-                return;
-            }
-            
-            if (!password) {
-                errorDiv.textContent = '❌ Por favor ingrese su contraseña';
-                errorDiv.style.display = 'block';
-                passwordInput.focus();
-                return;
-            }
-
-            // Validar formato de email
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                errorDiv.textContent = '❌ El formato del email no es válido';
-                errorDiv.style.display = 'block';
-                return;
-            }
-
-            // Mostrar loading
             loadingDiv.style.display = 'block';
-            loginBtn.disabled = true;
-            loginBtn.textContent = '🔄 Verificando...';
-
+            
+            if (fromTest) {
+                addConsoleMessage('🧪 MODO PRUEBA: Ejecutando login de prueba...', 'info');
+            }
+            
             try {
-                // Intentar login
                 const { data, error } = await supabase.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
-
+                
                 if (error) {
                     loadingDiv.style.display = 'none';
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = 'Ingresar al Sistema';
-                    
-                    if (error.message === 'Invalid login credentials') {
-                        errorDiv.innerHTML = '❌ <strong>Email o contraseña incorrectos</strong><br>Verifique sus credenciales o contacte al administrador.';
-                        errorDiv.style.display = 'block';
-                        
-                        // Mostrar credenciales de ayuda
-                        infoDiv.innerHTML = '💡 <strong>Credenciales válidas:</strong> admin@demo.com / Admin123456';
-                        infoDiv.style.display = 'block';
-                    } else if (error.message.includes('Email not confirmed')) {
-                        errorDiv.textContent = '❌ Su email no ha sido confirmado. Revise su bandeja de entrada.';
-                        errorDiv.style.display = 'block';
-                    } else {
-                        errorDiv.textContent = '❌ Error: ' + error.message;
-                        errorDiv.style.display = 'block';
-                    }
-                    return;
+                    addConsoleMessage(`❌ Error de autenticación: ${error.message}`, 'error');
+                    errorDiv.textContent = `❌ ${error.message}`;
+                    errorDiv.style.display = 'block';
+                    return false;
                 }
-
-                if (data?.user) {
-                    // Verificar si tiene perfil
-                    const { data: perfil, error: perfilError } = await supabase
-                        .from('perfiles')
-                        .select('rol, nombre')
-                        .eq('id', data.user.id)
-                        .single();
-
-                    if (perfilError) {
-                        loadingDiv.style.display = 'none';
-                        loginBtn.disabled = false;
-                        loginBtn.textContent = 'Ingresar al Sistema';
-                        errorDiv.innerHTML = '⚠️ <strong>Usuario sin perfil asignado</strong><br>Contacte al administrador para activar su cuenta.';
-                        errorDiv.style.display = 'block';
-                        await supabase.auth.signOut();
-                        return;
-                    }
-
-                    // Login exitoso
-                    successDiv.innerHTML = '✅ <strong>¡Bienvenido ' + (perfil.nombre || 'Usuario') + '!</strong><br>Redirigiendo al panel principal...';
-                    successDiv.style.display = 'block';
+                
+                addConsoleMessage(`✅ Autenticación exitosa para usuario: ${data.user.email}`, 'success');
+                addConsoleMessage(`🆔 User ID: ${data.user.id}`, 'info');
+                
+                // Verificar perfil
+                const { data: perfil, error: perfilError } = await supabase
+                    .from('perfiles')
+                    .select('rol, nombre')
+                    .eq('id', data.user.id)
+                    .single();
+                
+                if (perfilError) {
+                    addConsoleMessage(`⚠️ Usuario sin perfil: ${perfilError.message}`, 'error');
+                    errorDiv.textContent = '⚠️ Usuario sin perfil asignado';
+                    errorDiv.style.display = 'block';
+                    await supabase.auth.signOut();
                     loadingDiv.style.display = 'none';
-                    
-                    // Redirigir al dashboard
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1500);
+                    return false;
                 }
-
+                
+                addConsoleMessage(`👤 Perfil encontrado: ${perfil.nombre} (${perfil.rol})`, 'success');
+                
+                successDiv.textContent = `✅ ¡Bienvenido ${perfil.nombre}! Redirigiendo...`;
+                successDiv.style.display = 'block';
+                loadingDiv.style.display = 'none';
+                
+                addConsoleMessage('🚀 Redirigiendo al dashboard...', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+                
+                return true;
+                
             } catch (err) {
                 loadingDiv.style.display = 'none';
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Ingresar al Sistema';
-                errorDiv.textContent = '❌ Error de conexión: ' + err.message;
+                addConsoleMessage(`❌ Error inesperado: ${err.message}`, 'error');
+                errorDiv.textContent = `❌ Error: ${err.message}`;
                 errorDiv.style.display = 'block';
-                console.error('Error de conexión:', err);
+                return false;
             }
         }
 
-        // Verificar si ya hay sesión activa
+        // Login desde el formulario
+        async function login() {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            
+            if (!email || !password) {
+                errorDiv.textContent = '❌ Ingrese email y contraseña';
+                errorDiv.style.display = 'block';
+                addConsoleMessage('❌ Campos vacíos: email o contraseña no ingresados', 'error');
+                return;
+            }
+            
+            await doLogin(email, password, false);
+        }
+
+        // Prueba desde consola
+        async function testLogin() {
+            addConsoleMessage('🧪 === INICIANDO PRUEBA DE LOGIN ===', 'info');
+            const testEmail = 'admin@demo.com';
+            const testPassword = 'Admin123456';
+            
+            addConsoleMessage(`📧 Email de prueba: ${testEmail}`, 'info');
+            addConsoleMessage(`🔑 Contraseña de prueba: ${testPassword}`, 'info');
+            
+            await doLogin(testEmail, testPassword, true);
+        }
+
+        // Verificar sesión existente
         async function checkSession() {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    // Verificar que el perfil existe
-                    const { data: perfil } = await supabase
-                        .from('perfiles')
-                        .select('id')
-                        .eq('id', session.user.id)
-                        .single();
-                    
-                    if (perfil) {
-                        window.location.href = 'dashboard.html';
-                    }
+            addConsoleMessage('🔍 Verificando sesión existente...', 'info');
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session) {
+                addConsoleMessage(`✅ Sesión encontrada para: ${session.user.email}`, 'success');
+                const { data: perfil } = await supabase
+                    .from('perfiles')
+                    .select('id')
+                    .eq('id', session.user.id)
+                    .single();
+                
+                if (perfil) {
+                    addConsoleMessage('🚀 Redirigiendo al dashboard por sesión activa...', 'success');
+                    window.location.href = 'dashboard.html';
                 }
-            } catch (err) {
-                console.log('No hay sesión activa');
+            } else {
+                addConsoleMessage('ℹ️ No hay sesión activa', 'info');
             }
         }
 
-        // Eventos
+        // Configurar eventos
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? '👁️' : '🙈';
+            addConsoleMessage(`${type === 'text' ? 'Mostrando' : 'Ocultando'} contraseña`, 'info');
+        });
+        
         loginBtn.onclick = login;
+        testLoginBtn.onclick = testLogin;
+        testConnectionBtn.onclick = testConnection;
+        
         emailInput.onkeypress = (e) => { if (e.key === 'Enter') login(); };
         passwordInput.onkeypress = (e) => { if (e.key === 'Enter') login(); };
-
-        // Auto-completar credenciales de prueba (opcional)
+        
+        // Auto-completar credenciales
         emailInput.value = 'admin@demo.com';
         passwordInput.value = 'Admin123456';
-
-        // Iniciar
-        checkSession();
+        
+        // Inicializar
+        addConsoleMessage('🚀 Sistema inicializado', 'success');
+        addConsoleMessage(`🔗 Supabase URL: ${SUPABASE_URL}`, 'info');
+        
+        // Probar conexión automáticamente
+        setTimeout(async () => {
+            await testConnection();
+            await checkSession();
+        }, 500);
+        
+        // Exponer funciones para probar desde consola
+        window.testLogin = testLogin;
+        window.testConnection = testConnection;
+        window.supabaseClient = supabase;
+        
+        addConsoleMessage('💡 Puedes probar desde la consola con: testLogin() o testConnection()', 'info');
     </script>
 </body>
 </html>
