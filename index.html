@@ -9,7 +9,6 @@
     <script src="config.js"></script>
     <script src="app.js"></script>
     <style>
-        /* Estilos específicos para login */
         .login-container {
             display: flex;
             align-items: center;
@@ -90,6 +89,30 @@
             font-size: 13px;
             color: #fff;
         }
+        .force-btn {
+            background: #2a2a2a;
+            border: 1px solid #ff3b30;
+            color: #ff3b30;
+            margin-top: 15px;
+            font-size: 12px;
+            padding: 8px;
+        }
+        .console-hint {
+            margin-top: 20px;
+            padding: 12px;
+            background: #0d0d0d;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            text-align: center;
+            color: #888;
+        }
+        .console-hint code {
+            color: #ff3b30;
+            background: #1a1a1a;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
@@ -124,110 +147,144 @@
             </div>
 
             <button class="btn" id="loginBtn" style="width: 100%;">ACCEDER AL SISTEMA</button>
+            <button class="btn force-btn" id="forceConnectionBtn" style="width: 100%;">🔌 FORZAR CONEXIÓN</button>
 
             <div class="test-credentials">
                 🔑 <strong>Acceso de prueba</strong><br>
                 📧 <span>admin@demo.com</span> &nbsp;|&nbsp; 🔒 <span>Admin123456</span>
             </div>
+
+            <div class="console-hint">
+                💡 <strong>Prueba en consola (F12):</strong><br>
+                <code>forzarConexion()</code> - Forzar conexión a Supabase<br>
+                <code>supabaseGet()</code> - Ver cliente de Supabase
+            </div>
         </div>
     </div>
 
     <script>
-        (function() {
-            const loginBtn = document.getElementById('loginBtn');
-            const emailInput = document.getElementById('loginEmail');
-            const passwordInput = document.getElementById('loginPassword');
-            const errorDiv = document.getElementById('loginError');
-            const successDiv = document.getElementById('loginSuccess');
-            const loadingDiv = document.getElementById('loadingMessage');
-            const togglePassword = document.getElementById('togglePassword');
+        // Forzar inicialización al cargar
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Inicializando sistema...');
+            
+            // Inicializar Supabase
+            initSupabase();
+            
+            // Actualizar estado de conexión
             const connectionStatus = document.getElementById('connectionStatus');
-
-            // Toggle password
-            if (togglePassword) {
-                togglePassword.addEventListener('click', () => {
-                    const type = passwordInput.type === 'password' ? 'text' : 'password';
-                    passwordInput.type = type;
-                    togglePassword.textContent = type === 'password' ? '👁️' : '🙈';
-                });
+            
+            try {
+                const { error } = await supabase.from('perfiles').select('count', { count: 'exact', head: true });
+                if (error) throw error;
+                connectionStatus.innerHTML = '✅ SISTEMA CONECTADO | Supabase Online';
+                connectionStatus.style.color = '#4caf50';
+                console.log('✅ Conexión establecida');
+            } catch (error) {
+                connectionStatus.innerHTML = '⚠️ ERROR DE CONEXIÓN | Usa el botón "Forzar Conexión"';
+                connectionStatus.style.color = '#ff3b30';
+                console.error('❌ Error de conexión:', error.message);
             }
-
-            // Test connection
-            async function testConnection() {
-                try {
-                    const { error } = await supabase.from('perfiles').select('count', { count: 'exact', head: true });
-                    if (error) throw error;
-                    connectionStatus.innerHTML = '✅ SISTEMA CONECTADO | Supabase Online';
-                    connectionStatus.style.color = '#4caf50';
-                    return true;
-                } catch (error) {
-                    connectionStatus.innerHTML = '⚠️ ERROR DE CONEXIÓN | Verificar red';
-                    connectionStatus.style.color = '#ff3b30';
-                    return false;
-                }
+            
+            // Verificar sesión existente
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                console.log('✅ Sesión existente, redirigiendo...');
+                window.location.href = 'dashboard.html';
             }
+        });
 
-            // Login function
-            async function doLogin(email, password) {
-                errorDiv.style.display = 'none';
-                successDiv.style.display = 'none';
-                loadingDiv.style.display = 'block';
-                loginBtn.disabled = true;
+        // Elementos DOM
+        const loginBtn = document.getElementById('loginBtn');
+        const forceConnectionBtn = document.getElementById('forceConnectionBtn');
+        const emailInput = document.getElementById('loginEmail');
+        const passwordInput = document.getElementById('loginPassword');
+        const errorDiv = document.getElementById('loginError');
+        const successDiv = document.getElementById('loginSuccess');
+        const loadingDiv = document.getElementById('loadingMessage');
+        const togglePassword = document.getElementById('togglePassword');
 
-                try {
-                    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                    if (error) throw error;
-
-                    const { data: perfil, error: perfilError } = await supabase
-                        .from('perfiles')
-                        .select('nombre, rol')
-                        .eq('id', data.user.id)
-                        .single();
-
-                    if (perfilError) throw new Error('Perfil no encontrado');
-
-                    successDiv.style.display = 'block';
-                    successDiv.textContent = `✅ Bienvenido ${perfil.nombre}. Redirigiendo al panel...`;
-                    loadingDiv.style.display = 'none';
-                    setTimeout(() => window.location.href = 'dashboard.html', 1000);
-
-                } catch (err) {
-                    errorDiv.textContent = `❌ ${err.message === 'Invalid login credentials' ? 'Credenciales incorrectas' : err.message}`;
-                    errorDiv.style.display = 'block';
-                    loadingDiv.style.display = 'none';
-                    loginBtn.disabled = false;
-                }
-            }
-
-            // Event listeners
-            loginBtn.onclick = () => {
-                const email = emailInput.value.trim();
-                const password = passwordInput.value;
-                if (!email || !password) {
-                    errorDiv.textContent = '❌ Complete todos los campos';
-                    errorDiv.style.display = 'block';
-                    return;
-                }
-                doLogin(email, password);
-            };
-
-            emailInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
-            passwordInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
-
-            // Auto-fill
-            emailInput.value = 'admin@demo.com';
-            passwordInput.value = 'Admin123456';
-
-            // Check existing session
-            supabase.auth.getSession().then(({ data: { session } }) => {
-                if (session) window.location.href = 'dashboard.html';
+        // Toggle password
+        if (togglePassword) {
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                togglePassword.textContent = type === 'password' ? '👁️' : '🙈';
             });
+        }
 
-            testConnection();
+        // Forzar conexión manual
+        forceConnectionBtn.onclick = async function() {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.innerHTML = '🔄 Forzando conexión...';
+            statusDiv.style.color = '#ffc107';
+            
+            const resultado = await forzarConexion();
+            
+            if (resultado) {
+                statusDiv.innerHTML = '✅ SISTEMA CONECTADO | Supabase Online';
+                statusDiv.style.color = '#4caf50';
+                mostrarExito('Conexión establecida correctamente');
+            } else {
+                statusDiv.innerHTML = '⚠️ ERROR DE CONEXIÓN | Verificar URL y ANON KEY';
+                statusDiv.style.color = '#ff3b30';
+                mostrarError('No se pudo conectar a Supabase');
+            }
+        };
 
-            // Expose for console testing
-            window.testConnection = testConnection;
-        })();
+        // Función de login
+        async function doLogin(email, password) {
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
+            loginBtn.disabled = true;
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+
+                const { data: perfil, error: perfilError } = await supabase
+                    .from('perfiles')
+                    .select('nombre, rol')
+                    .eq('id', data.user.id)
+                    .single();
+
+                if (perfilError) throw new Error('Perfil no encontrado');
+
+                successDiv.style.display = 'block';
+                successDiv.textContent = `✅ Bienvenido ${perfil.nombre}. Redirigiendo al panel...`;
+                loadingDiv.style.display = 'none';
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
+
+            } catch (err) {
+                errorDiv.textContent = `❌ ${err.message === 'Invalid login credentials' ? 'Credenciales incorrectas' : err.message}`;
+                errorDiv.style.display = 'block';
+                loadingDiv.style.display = 'none';
+                loginBtn.disabled = false;
+            }
+        }
+
+        loginBtn.onclick = () => {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            if (!email || !password) {
+                errorDiv.textContent = '❌ Complete todos los campos';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            doLogin(email, password);
+        };
+
+        emailInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
+        passwordInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
+
+        // Auto-fill
+        emailInput.value = 'admin@demo.com';
+        passwordInput.value = 'Admin123456';
+
+        // Funciones globales para consola
+        window.forzarConexion = forzarConexion;
+        window.supabaseGet = () => supabase;
+        window.testLogin = () => doLogin('admin@demo.com', 'Admin123456');
     </script>
 </body>
 </html>
