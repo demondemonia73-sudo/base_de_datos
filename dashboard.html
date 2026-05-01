@@ -123,7 +123,7 @@
             <button class="nav-btn" onclick="location.href='ordenes.html'">📋 Órdenes OT</button>
             <button class="nav-btn" onclick="location.href='actividades.html'">⏱️ Actividades</button>
             <button class="nav-btn" onclick="location.href='reportes.html'">📈 Reportes</button>
-            <button class="nav-btn logout-btn" onclick="logout()">🚪 Salir</button>
+            <button class="nav-btn logout-btn" id="logoutBtn">🚪 Salir</button>
         </div>
         <div>👤 <span id="userName"></span> | <span id="userRol"></span></div>
     </div>
@@ -147,13 +147,32 @@
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let chart;
 
+        // Función de logout
+        async function logout() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    console.error('Error al cerrar sesión:', error);
+                    alert('Error al cerrar sesión: ' + error.message);
+                } else {
+                    console.log('Sesión cerrada correctamente');
+                    window.location.href = 'index.html';
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                window.location.href = 'index.html';
+            }
+        }
+
         async function init() {
+            // Verificar sesión
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) { 
                 window.location.href = 'index.html'; 
                 return; 
             }
             
+            // Obtener perfil
             const { data: perfil } = await supabase
                 .from('perfiles')
                 .select('*')
@@ -162,6 +181,12 @@
             
             document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
             document.getElementById('userRol').textContent = perfil?.rol?.toUpperCase() || 'OPERADOR';
+            
+            // Configurar botón de logout
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.onclick = logout;
+            }
             
             await cargarDashboard();
         }
@@ -198,11 +223,6 @@
             criticos?.forEach(e => { html += `<tr><td>${e.nombre}</td><td>${e.codigo_completo}</td><td><span class="badge-A">A</span></td></tr>`; });
             html += '</tbody></table>';
             document.getElementById('equiposCriticosList').innerHTML = html || '<p>No hay equipos críticos</p>';
-        }
-
-        async function logout() { 
-            await supabase.auth.signOut(); 
-            window.location.href = 'index.html'; 
         }
         
         init();
