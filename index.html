@@ -5,9 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Sistema de Mantenimiento</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="styles.css">
     <script src="config.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
         .login-container {
             display: flex;
             justify-content: center;
@@ -88,101 +97,141 @@
             color: #667eea;
             display: none;
         }
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div id="loginPage" class="login-container">
+    <div class="login-container">
         <div class="login-card">
             <h1>🔧 Sistema de Mantenimiento</h1>
             <p class="subtitle">Control de Equipos y Órdenes de Trabajo</p>
             <div id="loginError" class="error-message"></div>
-            <div id="loadingMessage" class="loading">⏳ Verificando usuario...</div>
+            <div id="loginSuccess" class="success-message"></div>
+            <div id="loadingMessage" class="loading">⏳ Verificando...</div>
             <div class="form-group">
                 <label>📧 Email</label>
-                <input type="email" id="loginEmail" placeholder="admin@demo.com" value="admin@demo.com">
+                <input type="email" id="loginEmail" placeholder="admin@demo.com">
             </div>
             <div class="form-group">
                 <label>🔒 Contraseña</label>
-                <input type="password" id="loginPassword" placeholder="••••••••" value="Admin123456">
+                <input type="password" id="loginPassword" placeholder="••••••••">
             </div>
-            <button class="btn" onclick="login()">Ingresar al Sistema</button>
+            <button class="btn" id="loginBtn">Ingresar al Sistema</button>
         </div>
     </div>
 
     <script>
-        let supabase;
+        // Configuración
+        const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
+        
+        // Inicializar Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Elementos del DOM
+        const loginBtn = document.getElementById('loginBtn');
+        const emailInput = document.getElementById('loginEmail');
+        const passwordInput = document.getElementById('loginPassword');
+        const errorDiv = document.getElementById('loginError');
+        const successDiv = document.getElementById('loginSuccess');
+        const loadingDiv = document.getElementById('loadingMessage');
 
-        async function init() {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Función de login
+        async function login() {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            // Ocultar mensajes anteriores
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
             
-            // Verificar si ya hay sesión activa
+            // Validar campos
+            if (!email || !password) {
+                errorDiv.textContent = '❌ Ingrese email y contraseña';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Mostrar loading
+            loadingDiv.style.display = 'block';
+            loginBtn.disabled = true;
+
+            try {
+                // Intentar login
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    if (error.message === 'Invalid login credentials') {
+                        errorDiv.textContent = '❌ Email o contraseña incorrectos. Use: admin@demo.com / Admin123456';
+                    } else {
+                        errorDiv.textContent = '❌ Error: ' + error.message;
+                    }
+                    errorDiv.style.display = 'block';
+                    loadingDiv.style.display = 'none';
+                    loginBtn.disabled = false;
+                    return;
+                }
+
+                if (data?.user) {
+                    // Verificar si tiene perfil
+                    const { data: perfil, error: perfilError } = await supabase
+                        .from('perfiles')
+                        .select('rol, nombre')
+                        .eq('id', data.user.id)
+                        .single();
+
+                    if (perfilError) {
+                        errorDiv.textContent = '⚠️ Usuario sin perfil asignado. Contacte al administrador.';
+                        errorDiv.style.display = 'block';
+                        await supabase.auth.signOut();
+                        loadingDiv.style.display = 'none';
+                        loginBtn.disabled = false;
+                        return;
+                    }
+
+                    // Login exitoso
+                    successDiv.textContent = '✅ Login exitoso! Redirigiendo...';
+                    successDiv.style.display = 'block';
+                    
+                    // Redirigir al dashboard
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                }
+
+            } catch (err) {
+                errorDiv.textContent = '❌ Error de conexión: ' + err.message;
+                errorDiv.style.display = 'block';
+                loadingDiv.style.display = 'none';
+                loginBtn.disabled = false;
+            }
+        }
+
+        // Verificar si ya hay sesión activa
+        async function checkSession() {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 window.location.href = 'dashboard.html';
             }
         }
 
-        async function login() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            const errorDiv = document.getElementById('loginError');
-            const loadingDiv = document.getElementById('loadingMessage');
+        // Eventos
+        loginBtn.onclick = login;
+        emailInput.onkeypress = (e) => { if (e.key === 'Enter') login(); };
+        passwordInput.onkeypress = (e) => { if (e.key === 'Enter') login(); };
 
-            errorDiv.style.display = 'none';
-            
-            if (!email || !password) {
-                errorDiv.textContent = 'Ingrese email y contraseña';
-                errorDiv.style.display = 'block';
-                return;
-            }
-
-            loadingDiv.style.display = 'block';
-
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
-                loadingDiv.style.display = 'none';
-
-                if (error) {
-                    if (error.message === 'Invalid login credentials') {
-                        errorDiv.textContent = '❌ Email o contraseña incorrectos. Usuario: admin@demo.com / Contraseña: Admin123456';
-                    } else {
-                        errorDiv.textContent = '❌ Error: ' + error.message;
-                    }
-                    errorDiv.style.display = 'block';
-                    return;
-                }
-
-                if (data?.user) {
-                    // Verificar si tiene perfil en la tabla perfiles
-                    const { data: perfil, error: perfilError } = await supabase
-                        .from('perfiles')
-                        .select('rol')
-                        .eq('id', data.user.id)
-                        .single();
-
-                    if (perfilError && perfilError.code === 'PGRST116') {
-                        errorDiv.textContent = '⚠️ Usuario válido pero sin perfil asignado. Contacte al administrador.';
-                        errorDiv.style.display = 'block';
-                        await supabase.auth.signOut();
-                        return;
-                    }
-
-                    // Redirigir al dashboard
-                    window.location.href = 'dashboard.html';
-                }
-
-            } catch (err) {
-                loadingDiv.style.display = 'none';
-                errorDiv.textContent = '❌ Error de conexión: ' + err.message;
-                errorDiv.style.display = 'block';
-            }
-        }
-
-        init();
+        // Iniciar
+        checkSession();
     </script>
 </body>
 </html>
