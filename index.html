@@ -3,275 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login + Pruebas - Sistema de Mantenimiento</title>
+    <title>Industrial MS - Login</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+    <script src="app.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
+        /* Estilos específicos para login */
         .login-container {
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             min-height: 100vh;
             padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(45deg, rgba(255,59,48,0.03) 0px, rgba(255,59,48,0.03) 2px, transparent 2px, transparent 8px);
+            pointer-events: none;
         }
         .login-card {
-            background: white;
-            border-radius: 20px;
+            background: #1a1a1a;
+            border-radius: 24px;
             padding: 40px;
             width: 100%;
-            max-width: 550px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: fadeIn 0.5s ease;
+            max-width: 460px;
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 1;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .login-card:hover {
+            border-color: #ff3b30;
+            box-shadow: 0 0 30px rgba(255,59,48,0.1);
+        }
+        .login-logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .login-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #ff3b30, #c0392b);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(255,59,48,0.3);
         }
         .login-card h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .login-card .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-        }
-        .password-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        .password-wrapper input {
-            width: 100%;
-            padding: 12px 45px 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-        .password-wrapper input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        .toggle-password {
-            position: absolute;
-            right: 15px;
-            cursor: pointer;
-            font-size: 18px;
-            background: none;
-            border: none;
-        }
-        .btn {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
+            font-size: 26px;
             font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-            margin-top: 10px;
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
         }
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .btn-secondary {
-            background: #6c757d;
-            margin-top: 0;
+        .login-subtitle {
+            color: #888;
+            text-align: center;
+            font-size: 13px;
+            margin-bottom: 32px;
         }
         .status-card {
-            background: #f8f9fa;
+            background: #0d0d0d;
             border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-left: 4px solid #ddd;
-        }
-        .status-connected {
-            border-left-color: #28a745;
-            background: #d4edda;
-        }
-        .status-disconnected {
-            border-left-color: #dc3545;
-            background: #f8d7da;
-        }
-        .status-testing {
-            border-left-color: #ffc107;
-            background: #fff3cd;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            border-left: 3px solid #ff3b30;
         }
         .status-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .console-log {
-            background: #1e1e1e;
-            color: #d4d4d4;
-            border-radius: 10px;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
             font-size: 11px;
-            margin-top: 20px;
-            max-height: 250px;
-            overflow-y: auto;
+            color: #888;
+            margin-bottom: 4px;
+            letter-spacing: 1px;
         }
-        .console-log p {
-            margin: 5px 0;
-            border-bottom: 1px solid #333;
-            padding: 5px 0;
-        }
-        .console-log .success { color: #4ec9b0; }
-        .console-log .error { color: #f48771; }
-        .console-log .info { color: #9cdcfe; }
-        .test-buttons {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-        }
-        .btn-test {
-            background: #6c757d;
-            font-size: 12px;
-            padding: 8px;
-            margin-top: 0;
-        }
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-            font-size: 14px;
-        }
-        .success-message {
-            background: #d4edda;
-            color: #155724;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        .loading {
-            text-align: center;
-            margin: 15px 0;
-            color: #667eea;
-            display: none;
-        }
-        .test-credentials {
-            margin-top: 15px;
-            padding: 10px;
-            background: #e9ecef;
-            border-radius: 10px;
-            font-size: 12px;
-            text-align: center;
-        }
-        .code-block {
-            background: #f4f4f4;
-            padding: 10px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 12px;
-            margin-top: 10px;
+        .status-text {
+            font-size: 13px;
+            color: #fff;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-card">
-            <h1>🔧 Sistema de Mantenimiento</h1>
-            <p class="subtitle">Panel de Control de Equipos | Modo Prueba</p>
-            
-            <!-- Estado de conexión -->
-            <div id="connectionStatus" class="status-card status-testing">
-                <div class="status-title">🔌 Estado de conexión:</div>
-                <div id="connectionText">🔄 Probando conexión con Supabase...</div>
+            <div class="login-logo">
+                <div class="login-icon">🔧</div>
+                <h1>INDUSTRIAL MS</h1>
+                <p class="login-subtitle">Sistema de Gestión de Mantenimiento</p>
             </div>
-            
-            <!-- Mensajes -->
+
+            <div id="statusCard" class="status-card">
+                <div class="status-title">🔌 ESTADO DEL SISTEMA</div>
+                <div class="status-text" id="connectionStatus">Inicializando conexión...</div>
+            </div>
+
             <div id="loginError" class="error-message"></div>
             <div id="loginSuccess" class="success-message"></div>
-            <div id="loadingMessage" class="loading">⏳ Procesando...</div>
-            
-            <!-- Formulario -->
+            <div id="loadingMessage" class="loading">⏳ Autenticando credenciales...</div>
+
             <div class="form-group">
-                <label>📧 Email</label>
+                <label>USUARIO</label>
                 <input type="email" id="loginEmail" placeholder="admin@demo.com">
             </div>
-            
+
             <div class="form-group">
-                <label>🔒 Contraseña</label>
+                <label>CONTRASEÑA</label>
                 <div class="password-wrapper">
                     <input type="password" id="loginPassword" placeholder="••••••••">
                     <button type="button" class="toggle-password" id="togglePassword">👁️</button>
                 </div>
             </div>
-            
-            <button class="btn" id="loginBtn">Ingresar al Sistema</button>
-            
-            <!-- Botones de prueba -->
-            <div class="test-buttons">
-                <button class="btn btn-test" id="testLoginBtn">🧪 Probar Login (admin@demo.com)</button>
-                <button class="btn btn-test" id="testConnectionBtn">🔍 Probar Conexión a Supabase</button>
-            </div>
-            
-            <!-- Consola de logs -->
-            <div class="console-log" id="consoleLog">
-                <p class="info">📋 [Sistema] Inicializando...</p>
-                <p class="info">💡 Puedes probar desde la consola con: <strong style="color:#ffc107;">window.testLogin()</strong> o <strong style="color:#ffc107;">window.testConnection()</strong></p>
-            </div>
-            
+
+            <button class="btn" id="loginBtn" style="width: 100%;">ACCEDER AL SISTEMA</button>
+
             <div class="test-credentials">
-                📋 <strong>Credenciales de prueba:</strong> admin@demo.com / Admin123456
-            </div>
-            
-            <div class="code-block">
-                💻 <strong>Comandos para consola (F12):</strong><br>
-                <code>window.testLogin()</code> - Probar login automático<br>
-                <code>window.testConnection()</code> - Probar conexión<br>
-                <code>window.supabase</code> - Ver cliente de Supabase
+                🔑 <strong>Acceso de prueba</strong><br>
+                📧 <span>admin@demo.com</span> &nbsp;|&nbsp; 🔒 <span>Admin123456</span>
             </div>
         </div>
     </div>
 
     <script>
         (function() {
-            // =====================================================
-            // CONFIGURACIÓN
-            // =====================================================
-            const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
-            const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
-            
-            // Inicializar Supabase
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            
-            // Elementos DOM
             const loginBtn = document.getElementById('loginBtn');
-            const testLoginBtn = document.getElementById('testLoginBtn');
-            const testConnectionBtn = document.getElementById('testConnectionBtn');
             const emailInput = document.getElementById('loginEmail');
             const passwordInput = document.getElementById('loginPassword');
             const errorDiv = document.getElementById('loginError');
@@ -279,221 +142,91 @@
             const loadingDiv = document.getElementById('loadingMessage');
             const togglePassword = document.getElementById('togglePassword');
             const connectionStatus = document.getElementById('connectionStatus');
-            const connectionText = document.getElementById('connectionText');
-            const consoleLog = document.getElementById('consoleLog');
 
-            // Función para agregar mensajes a la consola visual
-            function addConsoleMessage(message, type = 'info') {
-                const p = document.createElement('p');
-                p.className = type;
-                const timestamp = new Date().toLocaleTimeString();
-                p.innerHTML = `[${timestamp}] ${message}`;
-                consoleLog.appendChild(p);
-                p.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                
-                // También mostrar en consola real
-                if (type === 'error') console.error('❌', message);
-                else if (type === 'success') console.log('✅', message);
-                else console.log('📋', message);
+            // Toggle password
+            if (togglePassword) {
+                togglePassword.addEventListener('click', () => {
+                    const type = passwordInput.type === 'password' ? 'text' : 'password';
+                    passwordInput.type = type;
+                    togglePassword.textContent = type === 'password' ? '👁️' : '🙈';
+                });
             }
 
-            // Probar conexión a Supabase
+            // Test connection
             async function testConnection() {
-                addConsoleMessage('🔄 Probando conexión a Supabase...', 'info');
-                connectionStatus.className = 'status-card status-testing';
-                connectionText.innerHTML = '🔄 Probando conexión con Supabase...';
-                
                 try {
-                    // Probar conexión haciendo una consulta simple
-                    const { data, error } = await supabase.from('perfiles').select('count', { count: 'exact', head: true });
-                    
-                    if (error) {
-                        throw error;
-                    }
-                    
-                    connectionStatus.className = 'status-card status-connected';
-                    connectionText.innerHTML = '✅ Conectado a Supabase correctamente';
-                    addConsoleMessage('✅ Conexión exitosa a Supabase', 'success');
-                    
-                    // Probar tabla equipos
-                    const { count: equiposCount } = await supabase.from('equipos').select('*', { count: 'exact', head: true });
-                    addConsoleMessage(`📊 Tabla "equipos" tiene ${equiposCount || 0} registros`, equiposCount > 0 ? 'success' : 'info');
-                    
-                    // Probar tabla ordenes_trabajo
-                    const { count: otsCount } = await supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true });
-                    addConsoleMessage(`📊 Tabla "ordenes_trabajo" tiene ${otsCount || 0} registros`, otsCount > 0 ? 'success' : 'info');
-                    
+                    const { error } = await supabase.from('perfiles').select('count', { count: 'exact', head: true });
+                    if (error) throw error;
+                    connectionStatus.innerHTML = '✅ SISTEMA CONECTADO | Supabase Online';
+                    connectionStatus.style.color = '#4caf50';
                     return true;
-                    
                 } catch (error) {
-                    connectionStatus.className = 'status-card status-disconnected';
-                    connectionText.innerHTML = '❌ Error de conexión: ' + error.message;
-                    addConsoleMessage(`❌ Error de conexión: ${error.message}`, 'error');
+                    connectionStatus.innerHTML = '⚠️ ERROR DE CONEXIÓN | Verificar red';
+                    connectionStatus.style.color = '#ff3b30';
                     return false;
                 }
             }
 
-            // Función de login con logs detallados
-            async function doLogin(email, password, fromTest = false) {
-                addConsoleMessage(`🔐 Intentando login con email: ${email}`, 'info');
-                
+            // Login function
+            async function doLogin(email, password) {
                 errorDiv.style.display = 'none';
                 successDiv.style.display = 'none';
                 loadingDiv.style.display = 'block';
-                
-                if (fromTest) {
-                    addConsoleMessage('🧪 MODO PRUEBA: Ejecutando login de prueba...', 'info');
-                }
-                
+                loginBtn.disabled = true;
+
                 try {
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
-                    
-                    if (error) {
-                        loadingDiv.style.display = 'none';
-                        addConsoleMessage(`❌ Error de autenticación: ${error.message}`, 'error');
-                        errorDiv.textContent = `❌ ${error.message}`;
-                        errorDiv.style.display = 'block';
-                        return false;
-                    }
-                    
-                    addConsoleMessage(`✅ Autenticación exitosa para usuario: ${data.user.email}`, 'success');
-                    addConsoleMessage(`🆔 User ID: ${data.user.id}`, 'info');
-                    
-                    // Verificar perfil
+                    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+
                     const { data: perfil, error: perfilError } = await supabase
                         .from('perfiles')
-                        .select('rol, nombre')
+                        .select('nombre, rol')
                         .eq('id', data.user.id)
                         .single();
-                    
-                    if (perfilError) {
-                        addConsoleMessage(`⚠️ Usuario sin perfil: ${perfilError.message}`, 'error');
-                        errorDiv.textContent = '⚠️ Usuario sin perfil asignado. Contacte al administrador.';
-                        errorDiv.style.display = 'block';
-                        await supabase.auth.signOut();
-                        loadingDiv.style.display = 'none';
-                        return false;
-                    }
-                    
-                    addConsoleMessage(`👤 Perfil encontrado: ${perfil.nombre} (${perfil.rol})`, 'success');
-                    
-                    successDiv.textContent = `✅ ¡Bienvenido ${perfil.nombre}! Redirigiendo al dashboard...`;
+
+                    if (perfilError) throw new Error('Perfil no encontrado');
+
                     successDiv.style.display = 'block';
+                    successDiv.textContent = `✅ Bienvenido ${perfil.nombre}. Redirigiendo al panel...`;
                     loadingDiv.style.display = 'none';
-                    
-                    addConsoleMessage('🚀 Redirigiendo al dashboard...', 'success');
-                    
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1500);
-                    
-                    return true;
-                    
+                    setTimeout(() => window.location.href = 'dashboard.html', 1000);
+
                 } catch (err) {
-                    loadingDiv.style.display = 'none';
-                    addConsoleMessage(`❌ Error inesperado: ${err.message}`, 'error');
-                    errorDiv.textContent = `❌ Error: ${err.message}`;
+                    errorDiv.textContent = `❌ ${err.message === 'Invalid login credentials' ? 'Credenciales incorrectas' : err.message}`;
                     errorDiv.style.display = 'block';
-                    return false;
+                    loadingDiv.style.display = 'none';
+                    loginBtn.disabled = false;
                 }
             }
 
-            // Login desde el formulario
-            async function login() {
+            // Event listeners
+            loginBtn.onclick = () => {
                 const email = emailInput.value.trim();
                 const password = passwordInput.value;
-                
                 if (!email || !password) {
-                    errorDiv.textContent = '❌ Ingrese email y contraseña';
+                    errorDiv.textContent = '❌ Complete todos los campos';
                     errorDiv.style.display = 'block';
-                    addConsoleMessage('❌ Campos vacíos: email o contraseña no ingresados', 'error');
                     return;
                 }
-                
-                await doLogin(email, password, false);
-            }
+                doLogin(email, password);
+            };
 
-            // Prueba desde consola
-            async function testLogin() {
-                addConsoleMessage('🧪 === INICIANDO PRUEBA DE LOGIN ===', 'info');
-                const testEmail = 'admin@demo.com';
-                const testPassword = 'Admin123456';
-                
-                addConsoleMessage(`📧 Email de prueba: ${testEmail}`, 'info');
-                addConsoleMessage(`🔑 Contraseña de prueba: ${testPassword}`, 'info');
-                
-                await doLogin(testEmail, testPassword, true);
-            }
+            emailInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
+            passwordInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
 
-            // Verificar sesión existente
-            async function checkSession() {
-                addConsoleMessage('🔍 Verificando sesión existente...', 'info');
-                const { data: { session } } = await supabase.auth.getSession();
-                
-                if (session) {
-                    addConsoleMessage(`✅ Sesión encontrada para: ${session.user.email}`, 'success');
-                    const { data: perfil } = await supabase
-                        .from('perfiles')
-                        .select('id')
-                        .eq('id', session.user.id)
-                        .single();
-                    
-                    if (perfil) {
-                        addConsoleMessage('🚀 Redirigiendo al dashboard por sesión activa...', 'success');
-                        window.location.href = 'dashboard.html';
-                    }
-                } else {
-                    addConsoleMessage('ℹ️ No hay sesión activa', 'info');
-                }
-            }
+            // Auto-fill
+            emailInput.value = 'admin@demo.com';
+            passwordInput.value = 'Admin123456';
 
-            // Configurar eventos
-            if (togglePassword) {
-                togglePassword.addEventListener('click', function() {
-                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                    passwordInput.setAttribute('type', type);
-                    this.textContent = type === 'password' ? '👁️' : '🙈';
-                    addConsoleMessage(`${type === 'text' ? 'Mostrando' : 'Ocultando'} contraseña`, 'info');
-                });
-            }
-            
-            if (loginBtn) loginBtn.onclick = login;
-            if (testLoginBtn) testLoginBtn.onclick = testLogin;
-            if (testConnectionBtn) testConnectionBtn.onclick = testConnection;
-            
-            if (emailInput) {
-                emailInput.onkeypress = (e) => { if (e.key === 'Enter') login(); };
-            }
-            if (passwordInput) {
-                passwordInput.onkeypress = (e) => { if (e.key === 'Enter') login(); };
-            }
-            
-            // Auto-completar credenciales
-            if (emailInput) emailInput.value = 'admin@demo.com';
-            if (passwordInput) passwordInput.value = 'Admin123456';
-            
-            // EXPONER FUNCIONES GLOBALMENTE para la consola
-            window.testLogin = testLogin;
+            // Check existing session
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session) window.location.href = 'dashboard.html';
+            });
+
+            testConnection();
+
+            // Expose for console testing
             window.testConnection = testConnection;
-            window.supabase = supabase;
-            window.doLogin = doLogin;
-            
-            addConsoleMessage('🚀 Sistema inicializado', 'success');
-            addConsoleMessage(`🔗 Supabase URL: ${SUPABASE_URL}`, 'info');
-            addConsoleMessage('💡 Funciones disponibles en consola:', 'info');
-            addConsoleMessage('   - window.testLogin() → Probar login automático', 'info');
-            addConsoleMessage('   - window.testConnection() → Probar conexión', 'info');
-            addConsoleMessage('   - window.supabase → Ver cliente de Supabase', 'info');
-            
-            // Probar conexión automáticamente
-            setTimeout(async () => {
-                await testConnection();
-                await checkSession();
-                addConsoleMessage('✅ Listo! Puedes probar "window.testLogin()" en la consola', 'success');
-            }, 1000);
         })();
     </script>
 </body>
