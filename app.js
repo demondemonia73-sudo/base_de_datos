@@ -1,21 +1,40 @@
 // =====================================================
 // INDUSTRIAL MS - FUNCIONES COMPARTIDAS
-// Sistema de Gestión de Mantenimiento
 // =====================================================
 
-// Inicializar Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// Variables globales
+// Inicializar Supabase (solo una vez)
+let supabase;
 let currentUser = null;
 let currentUserRol = null;
 let currentUserNombre = null;
 
-// =====================================================
-// FUNCIONES DE AUTENTICACIÓN
-// =====================================================
+function initSupabase() {
+    if (!supabase) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('✅ Supabase inicializado');
+    }
+    return supabase;
+}
+
+// Función para forzar conexión
+async function forzarConexion() {
+    console.log('🔄 Forzando conexión a Supabase...');
+    initSupabase();
+    
+    try {
+        const { data, error } = await supabase.from('perfiles').select('count', { count: 'exact', head: true });
+        if (error) throw error;
+        console.log('✅ Conexión exitosa a Supabase');
+        return true;
+    } catch (error) {
+        console.error('❌ Error de conexión:', error.message);
+        return false;
+    }
+}
 
 async function verificarSesion() {
+    initSupabase();
+    
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
         window.location.href = 'index.html';
@@ -32,7 +51,6 @@ async function verificarSesion() {
     currentUserRol = perfil?.rol || 'operador';
     currentUserNombre = perfil?.nombre || 'Usuario';
     
-    // Actualizar UI si existe
     if (document.getElementById('userName')) {
         document.getElementById('userName').textContent = currentUserNombre;
         document.getElementById('userRol').textContent = currentUserRol.toUpperCase();
@@ -42,13 +60,10 @@ async function verificarSesion() {
 }
 
 async function logout() {
+    initSupabase();
     await supabase.auth.signOut();
     window.location.href = 'index.html';
 }
-
-// =====================================================
-// FUNCIONES DE MODALES
-// =====================================================
 
 function openModal(id) {
     const modal = document.getElementById(id);
@@ -60,16 +75,11 @@ function closeModal(id) {
     if (modal) modal.style.display = 'none';
 }
 
-// Cerrar modal al hacer clic fuera
 window.onclick = function(event) {
     if (event.target.classList && event.target.classList.contains('modal')) {
         event.target.style.display = 'none';
     }
 }
-
-// =====================================================
-// FUNCIONES DE REPORTES (Compartidas)
-// =====================================================
 
 async function exportarExcel(data, nombreArchivo, nombreHoja = 'Datos') {
     const ws = XLSX.utils.json_to_sheet(data || []);
@@ -93,10 +103,6 @@ async function exportarPDF(headers, data, nombreArchivo) {
     doc.save(`${nombreArchivo}_${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
-// =====================================================
-// FUNCIONES DE NOTIFICACIONES
-// =====================================================
-
 function mostrarError(mensaje) {
     const errorDiv = document.getElementById('loginError') || document.getElementById('errorMessage');
     if (errorDiv) {
@@ -117,22 +123,10 @@ function mostrarExito(mensaje) {
     }
 }
 
-// =====================================================
-// FUNCIONES DE CARGA DE DATOS
-// =====================================================
-
-function mostrarLoading(mostrar) {
-    const loadingDiv = document.getElementById('loadingMessage');
-    if (loadingDiv) {
-        loadingDiv.style.display = mostrar ? 'block' : 'none';
-    }
-}
-
-// =====================================================
-// EXPORTAR FUNCIONES GLOBALES
-// =====================================================
-
-window.supabase = supabase;
+// Exponer funciones globales
+window.initSupabase = initSupabase;
+window.forzarConexion = forzarConexion;
+window.supabaseGet = () => supabase;
 window.logout = logout;
 window.openModal = openModal;
 window.closeModal = closeModal;
@@ -140,4 +134,5 @@ window.exportarExcel = exportarExcel;
 window.exportarPDF = exportarPDF;
 window.mostrarError = mostrarError;
 window.mostrarExito = mostrarExito;
-window.mostrarLoading = mostrarLoading;
+
+console.log('📋 app.js cargado correctamente');
