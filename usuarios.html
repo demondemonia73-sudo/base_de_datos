@@ -228,6 +228,7 @@
                         <button class="btn-icon btn-view"   onclick="abrirCambiarPwd('${u.id}', '${u.nombre}')" title="Cambiar contraseña">🔑</button>
                         <button class="btn-icon btn-toggle" onclick="toggleActivo('${u.id}', ${!u.activo})"
                             title="${u.activo ? 'Desactivar' : 'Activar'}">${u.activo ? '🔴' : '🟢'}</button>
+                        <button class="btn-icon btn-delete" onclick="doEliminarUsuario('${u.id}', '${u.nombre}')" title="Eliminar usuario">🗑</button>
                     </div>
                 </td>
             </tr>`;
@@ -317,6 +318,17 @@
         try {
             await actualizarUsuario(id, { activo: nuevoEstado });
             mostrarToast(`Usuario ${nuevoEstado ? 'activado' : 'desactivado'}`, 'success');
+            await loadUsuarios();
+        } catch (err) {
+            mostrarToast('Error: ' + err.message, 'error');
+        }
+    }
+
+    async function doEliminarUsuario(id, nombre) {
+        if (!confirm(`¿Eliminar permanentemente al usuario "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
+        try {
+            await eliminarUsuario(id);
+            mostrarToast(`Usuario ${nombre} eliminado`, 'success');
             await loadUsuarios();
         } catch (err) {
             mostrarToast('Error: ' + err.message, 'error');
