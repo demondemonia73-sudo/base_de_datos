@@ -247,6 +247,22 @@ async function actualizarUsuario(id, data) {
     return true;
 }
 
+// ========== ELIMINAR USUARIO (via Edge Function) ==========
+async function eliminarUsuario(userId) {
+    const { data: { session } } = await window.db.auth.getSession();
+    const res = await fetch(EDGE_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ action: 'delete_user', userId }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Error al eliminar usuario');
+    return true;
+}
+
 // ========== CAMBIAR CONTRASEÑA (via Edge Function) ==========
 const EDGE_URL = 'https://inghjpgqahmceplasunr.supabase.co/functions/v1/admin-update-password';
 
@@ -367,7 +383,7 @@ Object.assign(window, {
     cargarEstadisticasDashboard,
     cargarEquipos, cargarOTs, crearOT, actualizarOT, eliminarOT,
     cargarActividades, crearActividad, actualizarActividad, eliminarActividad,
-    cargarUsuarios, crearUsuario, actualizarUsuario, cambiarPasswordAdmin,
+    cargarUsuarios, crearUsuario, actualizarUsuario, eliminarUsuario, cambiarPasswordAdmin,
     exportarExcel, exportarPDF,
     mostrarToast, formatFecha, formatFechaHora,
     badgeEstado, badgePrioridad, badgeCriticidad,
