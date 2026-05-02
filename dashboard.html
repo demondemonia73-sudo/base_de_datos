@@ -123,7 +123,7 @@
             document.getElementById('otsCompletadas').textContent  = stats.otsCompletadas  ?? '—';
 
             // Gráfico estados OT
-            const { data: estadosRaw } = await supabase.from('ordenes_trabajo').select('estado');
+            const { data: estadosRaw } = await window.db.from('ordenes_trabajo').select('estado');
             const counts = { Pendiente: 0, 'En Progreso': 0, Completada: 0, Cancelada: 0 };
             estadosRaw?.forEach(r => { if (counts[r.estado] !== undefined) counts[r.estado]++; });
 
@@ -143,7 +143,7 @@
             });
 
             // Gráfico criticidad
-            const { data: critRaw } = await supabase.from('equipos').select('criticidad');
+            const { data: critRaw } = await window.db.from('equipos').select('criticidad');
             const crit = { A: 0, B: 0, C: 0 };
             critRaw?.forEach(e => { if (e.criticidad && crit[e.criticidad] !== undefined) crit[e.criticidad]++; });
 
@@ -171,7 +171,7 @@
             });
 
             // Últimas OTs
-            const { data: ults } = await supabase.from('ordenes_trabajo')
+            const { data: ults } = await window.db.from('ordenes_trabajo')
                 .select('numero_ot, titulo, prioridad, estado, created_at')
                 .order('created_at', { ascending: false }).limit(5);
 
@@ -192,7 +192,7 @@
             }
 
             // Equipos críticos
-            const { data: criticos } = await supabase.from('equipos')
+            const { data: criticos } = await window.db.from('equipos')
                 .select('nombre, codigo_completo, proceso').eq('criticidad', 'A').limit(8);
 
             if (!criticos?.length) {
@@ -211,7 +211,7 @@
             }
 
             // Actividades recientes
-            const { data: acts } = await supabase.from('actividades_ot')
+            const { data: acts } = await window.db.from('actividades_ot')
                 .select('descripcion, tecnico, estado, created_at, ordenes_trabajo(numero_ot)')
                 .order('created_at', { ascending: false }).limit(5);
 
