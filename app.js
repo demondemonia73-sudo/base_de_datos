@@ -302,21 +302,105 @@ async function exportarExcel(data, nombreArchivo, nombreHoja = 'Datos') {
 }
 
 // ========== EXPORTAR PDF ==========
-async function exportarPDF(headers, data, nombreArchivo) {
+async function exportarPDF(headers, data, nombreArchivo, tituloReporte = '') {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('landscape');
-    doc.setFillColor(10, 10, 10);
-    doc.rect(0, 0, 297, 210, 'F');
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const fecha = new Date();
+    const fechaStr = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+    const fechaArchivo = fecha.toISOString().split('T')[0];
+
+    // ── Fondo blanco ──────────────────────────────
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageW, pageH, 'F');
+
+    // ── Banda superior roja ────────────────────────
+    doc.setFillColor(220, 38, 38);
+    doc.rect(0, 0, pageW, 22, 'F');
+
+    // ── Ícono / logo (cuadrado blanco con 🔧) ─────
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(6, 3, 16, 16, 2, 2, 'F');
+    doc.setTextColor(220, 38, 38);
+    doc.setFontSize(12);
+    doc.text('MS', 9, 14);
+
+    // ── Nombre empresa ────────────────────────────
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INDUSTRIAL MS', 26, 10);
+
+    // ── Subtítulo sistema ─────────────────────────
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('SISTEMA DE GESTIÓN DE MANTENIMIENTO', 26, 16);
+
+    // ── Fecha alineada a la derecha ───────────────
+    doc.setFontSize(8);
+    doc.setTextColor(255, 220, 220);
+    doc.text(fechaStr, pageW - 8, 12, { align: 'right' });
+
+    // ── Título del reporte ────────────────────────
+    const titulo = tituloReporte || nombreArchivo.replace(/_/g, ' ').toUpperCase();
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.text(titulo, 8, 32);
+
+    // ── Línea separadora ──────────────────────────
+    doc.setDrawColor(220, 38, 38);
+    doc.setLineWidth(0.5);
+    doc.line(8, 35, pageW - 8, 35);
+
+    // ── Tabla de datos ────────────────────────────
     doc.autoTable({
         head: [headers],
         body: data,
-        theme: 'striped',
-        styles: { fontSize: 8, textColor: [220, 220, 220], fillColor: [18, 18, 18] },
-        headStyles: { fillColor: [220, 38, 38], textColor: [255, 255, 255], fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [26, 26, 26] },
-        margin: { top: 20 },
+        startY: 38,
+        theme: 'grid',
+        styles: {
+            fontSize: 8,
+            textColor: [40, 40, 40],
+            cellPadding: 3,
+            lineColor: [220, 220, 220],
+            lineWidth: 0.1,
+        },
+        headStyles: {
+            fillColor: [220, 38, 38],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 8,
+        },
+        alternateRowStyles: {
+            fillColor: [250, 250, 250],
+        },
+        margin: { left: 8, right: 8 },
+
+        // ── Pie de página en cada hoja ────────────
+        didDrawPage: (hookData) => {
+            const pY = pageH - 8;
+            doc.setFontSize(7);
+            doc.setTextColor(150, 150, 150);
+            doc.setFont('helvetica', 'normal');
+
+            // Fecha izquierda
+            doc.text(`Generado el ${fechaStr}`, 8, pY);
+
+            // Número de página derecha
+            const total = doc.internal.getNumberOfPages();
+            const current = hookData.pageNumber;
+            doc.text(`Página ${current} de ${total}`, pageW - 8, pY, { align: 'right' });
+
+            // Línea separadora del pie
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.2);
+            doc.line(8, pY - 3, pageW - 8, pY - 3);
+        },
     });
-    doc.save(`${nombreArchivo}_${new Date().toISOString().split('T')[0]}.pdf`);
+
+    doc.save(`${nombreArchivo}_${fechaArchivo}.pdf`);
 }
 
 // ========== TOAST NOTIFICATIONS ==========
