@@ -228,7 +228,7 @@
     }
 
     async function poblarEquipos() {
-        const { data } = await supabase.from('equipos').select('id, nombre, codigo_completo').order('nombre');
+        const { data } = await window.db.from('equipos').select('id, nombre, codigo_completo').order('nombre');
         const sel = document.getElementById('otEquipoId');
         data?.forEach(e => sel.innerHTML += `<option value="${e.id}">${e.nombre} · ${e.codigo_completo}</option>`);
     }
@@ -260,7 +260,7 @@
         const ot = _ots.find(o => o.id === id);
         if (!ot) return;
 
-        const { data: acts } = await supabase.from('actividades_ot')
+        const { data: acts } = await window.db.from('actividades_ot')
             .select('*').eq('orden_trabajo_id', id).order('created_at');
 
         document.getElementById('verOTTitulo').textContent = ot.numero_ot;
