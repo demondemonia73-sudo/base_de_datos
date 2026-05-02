@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Industrial MS - Órdenes</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="styles.css">
     <style>
-        .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
         .action-buttons { display: flex; gap: 6px; }
         .btn-icon { padding: 4px 8px; border-radius: 6px; cursor: pointer; border: none; }
         .btn-view { background: #17a2b8; color: white; }
@@ -35,7 +33,7 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title">📋 ÓRDENES DE TRABAJO</div>
-                <button class="btn" onclick="openModal()">➕ NUEVA OT</button>
+                <button class="btn" onclick="openOTModal()">➕ NUEVA OT</button>
             </div>
             <div class="filter-bar">
                 <input type="text" id="searchOT" placeholder="🔍 Buscar OT..." onkeyup="filterOTs()">
@@ -46,7 +44,7 @@
     </div>
 
     <div id="otModal" class="modal"><div class="modal-content">
-        <div class="modal-header"><h3>➕ NUEVA OT</h3><span class="close-modal" onclick="closeModal()">&times;</span></div>
+        <div class="modal-header"><h3>➕ NUEVA OT</h3><span class="close-modal" onclick="closeModal('otModal')">&times;</span></div>
         <form id="otForm" onsubmit="event.preventDefault(); crearOT()">
             <div class="form-group"><label>TÍTULO *</label><input type="text" id="otTitulo" required></div>
             <div class="form-group"><label>EQUIPO</label><select id="otEquipoId"></select></div>
@@ -57,11 +55,17 @@
         </form>
     </div></div>
 
-    <div id="viewModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>👁️ DETALLE OT</h3><span class="close-modal" onclick="closeViewModal()">&times;</span></div><div id="viewContent"></div></div></div>
+    <div id="viewModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>👁️ DETALLE OT</h3><span class="close-modal" onclick="closeModal('viewModal')">&times;</span></div><div id="viewContent"></div></div></div>
 
-    <script src="config.js"></script>
     <script>
-        let otsData = [], currentUserRol = null, currentUserId = null;
+        let supabase, otsData = [], currentUserRol = null, currentUserId = null;
+
+        function initSupabase() {
+            const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        initSupabase();
 
         async function logout() { await supabase.auth.signOut(); window.location.href = 'index.html'; }
 
@@ -92,8 +96,15 @@
             ots.forEach(ot => {
                 let pClass = ot.prioridad === 'Urgente' ? 'badge-critical' : (ot.prioridad === 'Alta' ? 'badge-moderate' : 'badge-low');
                 let eClass = ot.estado === 'Pendiente' ? 'badge-pending' : (ot.estado === 'En Progreso' ? 'badge-progress' : 'badge-completed');
-                html += `<tr><td><strong>${ot.numero_ot}</strong></td><td>${ot.equipos?.nombre || '-'}</td><td>${ot.titulo || '-'}</td><td><span class="badge ${pClass}">${ot.prioridad}</span></td><td><span class="badge ${eClass}">${ot.estado}</span></td><td>${new Date(ot.created_at).toLocaleDateString()}</td>
-                <td class="action-buttons"><button class="btn-icon btn-view" onclick="verOT('${ot.id}')">👁️</button>${(currentUserRol === 'admin' || currentUserRol === 'supervisor') ? `<button class="btn-icon btn-edit" onclick="editarOT('${ot.id}')">✏️</button>` : ''}${currentUserRol === 'admin' ? `<button class="btn-icon btn-delete" onclick="eliminarOT('${ot.id}')">🗑️</button>` : ''}</td></tr>`);
+                html += `<tr>
+                    <td><strong>${ot.numero_ot}</strong></td>
+                    <td>${ot.equipos?.nombre || '-'}</td>
+                    <td>${ot.titulo || '-'}</td>
+                    <td><span class="badge ${pClass}">${ot.prioridad}</span></td>
+                    <td><span class="badge ${eClass}">${ot.estado}</span></td>
+                    <td>${new Date(ot.created_at).toLocaleDateString()}</td>
+                    <td class="action-buttons"><button class="btn-icon btn-view" onclick="verOT('${ot.id}')">👁️</button>${(currentUserRol === 'admin' || currentUserRol === 'supervisor') ? `<button class="btn-icon btn-edit" onclick="editarOT('${ot.id}')">✏️</button>` : ''}${currentUserRol === 'admin' ? `<button class="btn-icon btn-delete" onclick="eliminarOT('${ot.id}')">🗑️</button>` : ''}</td>
+                </tr>`;
             });
             html += '</tbody></table>';
             document.getElementById('otsTable').innerHTML = html || '<p>No hay órdenes</p>';
@@ -120,7 +131,7 @@
             if (!nuevaOT.titulo) { alert('El título es obligatorio'); return; }
             const { error } = await supabase.from('ordenes_trabajo').insert([nuevaOT]);
             if (error) alert('Error: ' + error.message);
-            else { alert('OT creada'); closeModal(); document.getElementById('otForm').reset(); cargarOTs(); }
+            else { alert('OT creada'); closeModal('otModal'); document.getElementById('otForm').reset(); cargarOTs(); }
         }
 
         async function verOT(id) {
@@ -129,15 +140,14 @@
             let actHtml = '<table class="data-table"><thead><tr><th>DESCRIPCIÓN</th><th>TÉCNICO</th><th>INICIO</th><th>FIN</th><th>HORAS</th></tr></thead><tbody>';
             actividades?.forEach(a => actHtml += `<tr><td>${a.descripcion}</td><td>${a.tecnico || '-'}</td><td>${a.inicio ? new Date(a.inicio).toLocaleString() : '-'}</td><td>${a.fin ? new Date(a.fin).toLocaleString() : '-'}</td><td>${a.total_horas || '-'}</td></tr>`);
             actHtml += '</tbody></table>';
-            document.getElementById('viewContent').innerHTML = `<h3>${ot.numero_ot}</h3><p><strong>${ot.titulo}</strong></p><p>Equipo: ${ot.equipos?.nombre || '-'}</p><p>Prioridad: ${ot.prioridad}</p><p>Estado: ${ot.estado}</p><hr><h4>Actividades</h4>${actHtml}<button class="btn" style="margin-top:15px;" onclick="closeViewModal()">CERRAR</button>`;
+            document.getElementById('viewContent').innerHTML = `<h3>${ot.numero_ot}</h3><p><strong>${ot.titulo}</strong></p><p>Equipo: ${ot.equipos?.nombre || '-'}</p><p>Prioridad: ${ot.prioridad}</p><p>Estado: ${ot.estado}</p><hr><h4>Actividades</h4>${actHtml}<button class="btn" style="margin-top:15px;" onclick="closeModal('viewModal')">CERRAR</button>`;
             document.getElementById('viewModal').style.display = 'flex';
         }
 
         function editarOT(id) { alert('Editar OT #' + id); }
         async function eliminarOT(id) { if (confirm('¿Eliminar OT?')) { await supabase.from('ordenes_trabajo').delete().eq('id', id); cargarOTs(); } }
-        function openModal() { document.getElementById('otModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('otModal').style.display = 'none'; }
-        function closeViewModal() { document.getElementById('viewModal').style.display = 'none'; }
+        function openOTModal() { document.getElementById('otModal').style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
         init();
     </script>
