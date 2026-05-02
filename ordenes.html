@@ -1,1 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial MS - Órdenes</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-area"><div class="logo-icon">🔧</div><div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div></div>
+        <div class="nav-menu">
+            <button class="nav-btn" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
+            <button class="nav-btn" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
+            <button class="nav-btn active" onclick="location.href='ordenes.html'">📋 OT</button>
+            <button class="nav-btn" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
+            <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
+            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
+            <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
+        </div>
+        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Usuario</div><div class="user-role" id="userRol">ROL</div></div></div>
+    </div>
 
+    <div class="main-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📋 ÓRDENES DE TRABAJO</div>
+                <button class="btn" onclick="openModal('otModal')">➕ NUEVA OT</button>
+            </div>
+            <div class="filter-bar">
+                <input type="text" id="searchOT" placeholder="🔍 Buscar OT..." onkeyup="filtrarOTs()">
+                <select id="filterEstado" onchange="filtrarOTs()"><option value="">📊 TODOS</option><option value="Pendiente">⏳ PENDIENTE</option><option value="En Progreso">🔄 EN PROGRESO</option><option value="Completada">✅ COMPLETADA</option></select>
+            </div>
+            <div id="otsTable"></div>
+        </div>
+    </div>
+
+    <!-- Modal Nueva OT -->
+    <div id="otModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>➕ NUEVA OT</h3><span class="close-modal" onclick="closeModal('otModal')">&times;</span></div>
+            <form id="otForm" onsubmit="event.preventDefault(); crearOT()">
+                <div class="form-group"><label>TÍTULO *</label><input type="text" id="otTitulo" required></div>
+                <div class="form-group"><label>EQUIPO</label><select id="otEquipoId"></select></div>
+                <div class="form-group"><label>DESCRIPCIÓN</label><textarea id="otDescripcion" rows="3"></textarea></div>
+                <div class="form-group"><label>PRIORIDAD</label><select id="otPrioridad"><option value="Baja">🟢 BAJA</option><option value="Normal">🔵 NORMAL</option><option value="Alta">🟠 ALTA</option><option value="Urgente">🔴 URGENTE</option></select></div>
+                <div class="form-group"><label>TIPO</label><select id="otTipo"><option value="Preventivo">🔧 PREVENTIVO</option><option value="Correctivo">🛠️ CORRECTIVO</option></select></div>
+                <button type="submit" class="btn">CREAR OT</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Ver OT -->
+    <div id="viewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>👁️ DETALLE OT</h3><span class="close-modal" onclick="closeModal('viewModal')">&times;</span></div>
+            <div id="viewContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let otsData = [];
+
+        async function init() {
+            const { user, perfil } = await verificarSesion();
+            if (!user) return;
+            document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
+            document.getElementById('userRol').textContent = perfil?.rol?.toUpperCase() || 'ROL';
+            if (perfil?.rol === 'admin') document.getElementById('navUsuarios').style.display = 'block';
+            document.getElementById('logoutBtn').onclick = logout;
+            await cargarOTs();
+            await cargarSelectEquipos();
+        }
+
+        async function cargarOTs() {
+            otsData = await window.cargarOTs();
+            renderizarOTs(otsData);
+        }
+
+        function renderizarOTs(ots) {
+            let html = '<table class="data-table"><thead><tr><th>N° OT</th><th>EQUIPO</th><th>TÍTULO</th><th>PRIORIDAD</th><th>ESTADO</th><th>FECHA</th><th>ACCIONES</th></tr></thead><tbody>';
+            ots.forEach(ot => {
+                let pClass = ot.prioridad === 'Urgente' ? 'badge-critical' : (ot.prioridad === 'Alta' ? 'badge-moderate' : 'badge-low');
+                let eClass = ot.estado === 'Pendiente' ? 'badge-pending' : (ot.estado === 'En Progreso' ? 'badge-progress' : 'badge-completed');
+                html += `<tr>
+                    <td><strong>${ot.numero_ot}</strong></td>
+                    <td>${ot.equipos?.nombre || '-'}</td>
+                    <td>${ot.titulo || '-'}</td>
+                    <td><span class="badge ${pClass}">${ot.prioridad}</span></td>
+                    <td><span class="badge ${eClass}">${ot.estado}</span></td>
+                    <td>${new Date(ot.created_at).toLocaleDateString()}</td>
+                    <td class="action-buttons">
+                        <button class="btn-icon btn-view" onclick="verOT('${ot.id}')">👁️</button>
+                        <button class="btn-icon btn-edit" onclick="editarOT('${ot.id}')">✏️</button>
+                        <button class="btn-icon btn-delete" onclick="eliminarOT('${ot.id}')">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('otsTable').innerHTML = html || '<p>No hay órdenes</p>';
+        }
+
+        function filtrarOTs() {
+            let filtered = otsData;
+            const search = document.getElementById('searchOT').value.toLowerCase();
+            if (search) filtered = filtered.filter(ot => ot.numero_ot?.toLowerCase().includes(search) || ot.titulo?.toLowerCase().includes(search));
+            const estado = document.getElementById('filterEstado').value;
+            if (estado) filtered = filtered.filter(ot => ot.estado === estado);
+            renderizarOTs(filtered);
+        }
+
+        async function cargarSelectEquipos() {
+            const { data } = await supabase.from('equipos').select('id, nombre, codigo_completo');
+            const select = document.getElementById('otEquipoId');
+            select.innerHTML = '<option value="">SELECCIONE EQUIPO</option>';
+            data?.forEach(e => select.innerHTML += `<option value="${e.id}">${e.nombre} (${e.codigo_completo})</option>`);
+        }
+
+        async function crearOT() {
+            const nuevaOT = {
+                titulo: document.getElementById('otTitulo').value,
+                equipo_id: document.getElementById('otEquipoId').value || null,
+                descripcion: document.getElementById('otDescripcion').value,
+                prioridad: document.getElementById('otPrioridad').value,
+                tipo_mantenimiento: document.getElementById('otTipo').value,
+                estado: 'Pendiente'
+            };
+            if (!nuevaOT.titulo) { alert('El título es obligatorio'); return; }
+            try {
+                await window.crearOT(nuevaOT);
+                alert('OT creada exitosamente');
+                closeModal('otModal');
+                document.getElementById('otForm').reset();
+                await cargarOTs();
+            } catch (error) { alert('Error: ' + error.message); }
+        }
+
+        async function verOT(id) {
+            const { data: ot } = await supabase.from('ordenes_trabajo').select('*, equipos(*)').eq('id', id).single();
+            const { data: actividades } = await supabase.from('actividades_ot').select('*').eq('orden_trabajo_id', id);
+            let actHtml = '<table class="data-table"><thead><tr><th>DESCRIPCIÓN</th><th>TÉCNICO</th><th>INICIO</th><th>FIN</th><th>HORAS</th></tr></thead><tbody>';
+            actividades?.forEach(a => actHtml += `<tr><td>${a.descripcion}</td><td>${a.tecnico || '-'}</td><td>${a.inicio ? new Date(a.inicio).toLocaleString() : '-'}</td><td>${a.fin ? new Date(a.fin).toLocaleString() : '-'}</td><td>${a.total_horas || '-'}</td></tr>`);
+            actHtml += '</tbody></table>';
+            document.getElementById('viewContent').innerHTML = `
+                <h3 style="color:#ff3b30;">${ot.numero_ot}</h3>
+                <p><strong>📌 Título:</strong> ${ot.titulo}</p>
+                <p><strong>🔧 Equipo:</strong> ${ot.equipos?.nombre || '-'}</p>
+                <p><strong>⚠️ Prioridad:</strong> ${ot.prioridad}</p>
+                <p><strong>📊 Estado:</strong> ${ot.estado}</p>
+                <p><strong>📝 Descripción:</strong> ${ot.descripcion || '-'}</p>
+                <hr style="border-color:#2a2a2a; margin:15px 0;">
+                <h4>⏱️ ACTIVIDADES</h4>
+                ${actHtml}
+                <button class="btn" style="margin-top:15px;" onclick="closeModal('viewModal')">CERRAR</button>`;
+            openModal('viewModal');
+        }
+
+        async function editarOT(id) {
+            const nuevoEstado = prompt('Nuevo estado (Pendiente, En Progreso, Completada, Cancelada):');
+            if (nuevoEstado && ['Pendiente', 'En Progreso', 'Completada', 'Cancelada'].includes(nuevoEstado)) {
+                await supabase.from('ordenes_trabajo').update({ estado: nuevoEstado }).eq('id', id);
+                await cargarOTs();
+            }
+        }
+
+        async function eliminarOT(id) {
+            if (confirm('¿Eliminar esta OT y todas sus actividades?')) {
+                await supabase.from('actividades_ot').delete().eq('orden_trabajo_id', id);
+                await supabase.from('ordenes_trabajo').delete().eq('id', id);
+                await cargarOTs();
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
