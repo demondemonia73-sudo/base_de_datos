@@ -53,14 +53,25 @@
                 🔑 <strong>Usuarios de prueba</strong><br>
                 👑 admin@industrial.com / Admin123456<br>
                 📋 supervisor@industrial.com / Supervisor123<br>
-                🔧 tecnico@industrial.com / Tecnico123<br>
-                ⚙️ operador@industrial.com / Operador123
+                🔧 tecnico@industrial.com / Tecnico123
             </div>
         </div>
     </div>
 
-    <script src="config.js"></script>
     <script>
+        // Definir variable global para Supabase
+        let supabase;
+
+        // Inicializar Supabase
+        function initSupabase() {
+            const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase inicializado');
+            return supabase;
+        }
+
+        // Elementos DOM
         const loginBtn = document.getElementById('loginBtn');
         const forceBtn = document.getElementById('forceBtn');
         const clearBtn = document.getElementById('clearBtn');
@@ -71,13 +82,18 @@
         const connectionStatus = document.getElementById('connectionStatus');
         const togglePassword = document.getElementById('togglePassword');
 
-        togglePassword.addEventListener('click', () => {
-            const type = passwordInput.type === 'password' ? 'text' : 'password';
-            passwordInput.type = type;
-            togglePassword.textContent = type === 'password' ? '👁️' : '🙈';
-        });
+        // Toggle password
+        if (togglePassword) {
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                togglePassword.textContent = type === 'password' ? '👁️' : '🙈';
+            });
+        }
 
+        // Probar conexión
         async function testConnection() {
+            if (!supabase) initSupabase();
             connectionStatus.innerHTML = '🔄 Probando conexión...';
             try {
                 const { error } = await supabase.from('perfiles').select('count', { count: 'exact', head: true });
@@ -92,16 +108,22 @@
             }
         }
 
+        // Limpiar sesión
         async function clearSession() {
+            if (!supabase) initSupabase();
             connectionStatus.innerHTML = '🔄 Limpiando sesión...';
             localStorage.clear();
             sessionStorage.clear();
-            await supabase.auth.signOut();
+            try {
+                await supabase.auth.signOut();
+            } catch(e) {}
             connectionStatus.innerHTML = '✅ Sesión limpiada. Recargando...';
             setTimeout(() => window.location.reload(), 1000);
         }
 
+        // Login
         async function doLogin(email, password) {
+            if (!supabase) initSupabase();
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
             
@@ -121,6 +143,7 @@
             }
         }
 
+        // Eventos
         loginBtn.onclick = () => {
             const email = emailInput.value.trim();
             const password = passwordInput.value;
@@ -134,14 +157,22 @@
         forceBtn.onclick = testConnection;
         clearBtn.onclick = clearSession;
         
+        // Valores por defecto
         emailInput.value = 'admin@industrial.com';
         passwordInput.value = 'Admin123456';
+        
+        // Inicializar y verificar sesión
+        initSupabase();
         
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session) window.location.href = 'dashboard.html';
         });
         
         testConnection();
+        
+        // Exponer funciones para consola
+        window.testConnection = testConnection;
+        window.clearSession = clearSession;
     </script>
 </body>
 </html>
