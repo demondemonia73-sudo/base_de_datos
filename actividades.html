@@ -212,7 +212,7 @@
     }
 
     async function poblarOTs() {
-        const { data } = await supabase.from('ordenes_trabajo')
+        const { data } = await window.db.from('ordenes_trabajo')
             .select('id, numero_ot, titulo').order('id', { ascending: false });
         const sel = document.getElementById('actOtId');
         sel.innerHTML = '<option value="">— Seleccione OT —</option>';
