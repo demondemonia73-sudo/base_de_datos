@@ -177,14 +177,14 @@ async function loginConNombreOEmail(input, password) {
 
     // Si no tiene @ es un nombre de usuario — buscar el email en perfiles
     if (!email.includes('@')) {
-        const { data: perfil, error } = await window.db
+        const { data: perfiles, error } = await window.db
             .from('perfiles')
             .select('email')
-            .ilike('nombre', input.trim())
+            .eq('username', input.trim())
             .eq('activo', true)
-            .single();
-        if (error || !perfil) throw new Error('Usuario no encontrado. Verifique el nombre o use su email.');
-        email = perfil.email;
+            .limit(1);
+        if (error || !perfiles || perfiles.length === 0) throw new Error('Usuario no encontrado. Use su username o email.');
+        email = perfiles[0].email;
     }
 
     const { data, error } = await window.db.auth.signInWithPassword({ email, password });
