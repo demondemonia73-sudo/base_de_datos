@@ -3,125 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial MS - Órdenes de Trabajo</title>
+    <title>Industrial MS - Órdenes</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="styles.css">
-    <script src="config.js"></script>
-    <script src="app.js"></script>
+    <style>
+        .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .action-buttons { display: flex; gap: 6px; }
+        .btn-icon { padding: 4px 8px; border-radius: 6px; cursor: pointer; border: none; }
+        .btn-view { background: #17a2b8; color: white; }
+        .btn-edit { background: #ffc107; color: #0a0a0a; }
+        .btn-delete { background: #dc3545; color: white; }
+    </style>
 </head>
 <body>
     <div class="header">
-        <div class="logo-area">
-            <div class="logo-icon">🔧</div>
-            <div class="logo-text">
-                <h1>INDUSTRIAL MS</h1>
-                <p>MAINTENANCE SYSTEM</p>
-            </div>
-        </div>
+        <div class="logo-area"><div class="logo-icon">🔧</div><div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div></div>
         <div class="nav-menu">
             <button class="nav-btn" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
             <button class="nav-btn" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
             <button class="nav-btn active" onclick="location.href='ordenes.html'">📋 OT</button>
             <button class="nav-btn" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
             <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
+            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
             <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
         </div>
-        <div class="user-info">
-            <div class="user-avatar">👤</div>
-            <div class="user-details">
-                <div class="user-name" id="userName">Usuario</div>
-                <div class="user-role" id="userRol">ADMIN</div>
-            </div>
-        </div>
+        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Usuario</div><div class="user-role" id="userRol">ROL</div></div></div>
     </div>
 
     <div class="main-content">
         <div class="card">
             <div class="card-header">
                 <div class="card-title">📋 ÓRDENES DE TRABAJO</div>
-                <button class="btn" onclick="openModal('otModal')">➕ NUEVA OT</button>
+                <button class="btn" onclick="openModal()">➕ NUEVA OT</button>
             </div>
             <div class="filter-bar">
-                <input type="text" id="searchOT" placeholder="🔍 Buscar OT..." onkeyup="filtrarOTs()">
-                <select id="filterEstadoOT" onchange="filtrarOTs()">
-                    <option value="">📊 TODOS LOS ESTADOS</option>
-                    <option value="Pendiente">⏳ PENDIENTE</option>
-                    <option value="En Progreso">🔄 EN PROGRESO</option>
-                    <option value="Completada">✅ COMPLETADA</option>
-                    <option value="Cancelada">❌ CANCELADA</option>
-                </select>
+                <input type="text" id="searchOT" placeholder="🔍 Buscar OT..." onkeyup="filterOTs()">
+                <select id="filterEstado" onchange="filterOTs()"><option value="">📊 TODOS</option><option value="Pendiente">⏳ PENDIENTE</option><option value="En Progreso">🔄 EN PROGRESO</option><option value="Completada">✅ COMPLETADA</option></select>
             </div>
             <div id="otsTable"></div>
         </div>
     </div>
 
-    <!-- Modal Nueva OT -->
-    <div id="otModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>➕ NUEVA ORDEN DE TRABAJO</h3>
-                <span class="close-modal" onclick="closeModal('otModal')">&times;</span>
-            </div>
-            <form id="otForm" onsubmit="event.preventDefault(); crearOT()">
-                <div class="form-group">
-                    <label>TÍTULO *</label>
-                    <input type="text" id="otTitulo" required placeholder="Ej: Mantenimiento correctivo motor">
-                </div>
-                <div class="form-group">
-                    <label>EQUIPO</label>
-                    <select id="otEquipoId"></select>
-                </div>
-                <div class="form-group">
-                    <label>DESCRIPCIÓN</label>
-                    <textarea id="otDescripcion" rows="3" placeholder="Detalle de la intervención..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label>PRIORIDAD</label>
-                    <select id="otPrioridad">
-                        <option value="Baja">🟢 BAJA</option>
-                        <option value="Normal" selected>🔵 NORMAL</option>
-                        <option value="Alta">🟠 ALTA</option>
-                        <option value="Urgente">🔴 URGENTE</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>TIPO DE MANTENIMIENTO</label>
-                    <select id="otTipo">
-                        <option value="Preventivo">🔧 PREVENTIVO</option>
-                        <option value="Correctivo">🛠️ CORRECTIVO</option>
-                        <option value="Predictivo">📊 PREDICTIVO</option>
-                        <option value="Emergencia">🚨 EMERGENCIA</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn" style="width:100%;">CREAR OT</button>
-            </form>
-        </div>
-    </div>
+    <div id="otModal" class="modal"><div class="modal-content">
+        <div class="modal-header"><h3>➕ NUEVA OT</h3><span class="close-modal" onclick="closeModal()">&times;</span></div>
+        <form id="otForm" onsubmit="event.preventDefault(); crearOT()">
+            <div class="form-group"><label>TÍTULO *</label><input type="text" id="otTitulo" required></div>
+            <div class="form-group"><label>EQUIPO</label><select id="otEquipoId"></select></div>
+            <div class="form-group"><label>DESCRIPCIÓN</label><textarea id="otDescripcion" rows="3"></textarea></div>
+            <div class="form-group"><label>PRIORIDAD</label><select id="otPrioridad"><option value="Baja">🟢 BAJA</option><option value="Normal">🔵 NORMAL</option><option value="Alta">🟠 ALTA</option><option value="Urgente">🔴 URGENTE</option></select></div>
+            <div class="form-group"><label>TIPO</label><select id="otTipo"><option value="Preventivo">🔧 PREVENTIVO</option><option value="Correctivo">🛠️ CORRECTIVO</option></select></div>
+            <button type="submit" class="btn">CREAR OT</button>
+        </form>
+    </div></div>
 
-    <!-- Modal Ver OT -->
-    <div id="viewOTModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>👁️ DETALLE DE OT</h3>
-                <span class="close-modal" onclick="closeModal('viewOTModal')">&times;</span>
-            </div>
-            <div id="viewOTContent"></div>
-        </div>
-    </div>
+    <div id="viewModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>👁️ DETALLE OT</h3><span class="close-modal" onclick="closeViewModal()">&times;</span></div><div id="viewContent"></div></div></div>
 
+    <script src="config.js"></script>
     <script>
-        let otsData = [];
+        let otsData = [], currentUserRol = null, currentUserId = null;
+
+        async function logout() { await supabase.auth.signOut(); window.location.href = 'index.html'; }
 
         async function init() {
-            await verificarSesion();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'index.html'; return; }
+            const { data: perfil } = await supabase.from('perfiles').select('nombre, rol, id').eq('id', session.user.id).single();
+            if (perfil) {
+                document.getElementById('userName').textContent = perfil.nombre;
+                document.getElementById('userRol').textContent = perfil.rol?.toUpperCase();
+                currentUserRol = perfil.rol;
+                currentUserId = perfil.id;
+                if (currentUserRol === 'admin') document.getElementById('navUsuarios').style.display = 'block';
+            }
             document.getElementById('logoutBtn').onclick = logout;
             await cargarOTs();
-            await cargarSelectEquipos();
+            await cargarEquiposSelect();
         }
 
         async function cargarOTs() {
-            const { data, error } = await supabase.from('ordenes_trabajo').select(`*, equipos(nombre)`).order('id', { ascending: false });
-            if (error) console.error(error);
+            const { data } = await supabase.from('ordenes_trabajo').select(`*, equipos(nombre)`).order('id', { ascending: false });
             otsData = data || [];
             renderizarOTs(otsData);
         }
@@ -129,96 +90,54 @@
         function renderizarOTs(ots) {
             let html = '<table class="data-table"><thead><tr><th>N° OT</th><th>EQUIPO</th><th>TÍTULO</th><th>PRIORIDAD</th><th>ESTADO</th><th>FECHA</th><th>ACCIONES</th></tr></thead><tbody>';
             ots.forEach(ot => {
-                let estadoClass = ot.estado === 'Pendiente' ? 'badge-pending' : (ot.estado === 'En Progreso' ? 'badge-progress' : (ot.estado === 'Completada' ? 'badge-completed' : 'badge-cancelled'));
-                let prioridadClass = ot.prioridad === 'Urgente' ? 'badge-critical' : (ot.prioridad === 'Alta' ? 'badge-moderate' : 'badge-low');
-                html += `<tr>
-                    <td><strong>${ot.numero_ot || '-'}</strong></td>
-                    <td>${ot.equipos?.nombre || ot.equipo_nombre || '-'}</td>
-                    <td>${ot.titulo || '-'}</td>
-                    <td><span class="badge ${prioridadClass}">${ot.prioridad || '-'}</span></td>
-                    <td><span class="badge ${estadoClass}">${ot.estado || '-'}</span></td>
-                    <td>${ot.created_at ? new Date(ot.created_at).toLocaleDateString() : '-'}</td>
-                    <td class="action-buttons">
-                        <button class="btn-icon btn-view" onclick="verOT(${ot.id})">👁️</button>
-                        ${currentUserRol === 'admin' || currentUserRol === 'supervisor' ? `<button class="btn-icon btn-edit" onclick="editarOT(${ot.id})">✏️</button>` : ''}
-                        ${currentUserRol === 'admin' ? `<button class="btn-icon btn-delete" onclick="eliminarOT(${ot.id})">🗑️</button>` : ''}
-                    </td>
-                </tr>`;
+                let pClass = ot.prioridad === 'Urgente' ? 'badge-critical' : (ot.prioridad === 'Alta' ? 'badge-moderate' : 'badge-low');
+                let eClass = ot.estado === 'Pendiente' ? 'badge-pending' : (ot.estado === 'En Progreso' ? 'badge-progress' : 'badge-completed');
+                html += `<tr><td><strong>${ot.numero_ot}</strong></td><td>${ot.equipos?.nombre || '-'}</td><td>${ot.titulo || '-'}</td><td><span class="badge ${pClass}">${ot.prioridad}</span></td><td><span class="badge ${eClass}">${ot.estado}</span></td><td>${new Date(ot.created_at).toLocaleDateString()}</td>
+                <td class="action-buttons"><button class="btn-icon btn-view" onclick="verOT('${ot.id}')">👁️</button>${(currentUserRol === 'admin' || currentUserRol === 'supervisor') ? `<button class="btn-icon btn-edit" onclick="editarOT('${ot.id}')">✏️</button>` : ''}${currentUserRol === 'admin' ? `<button class="btn-icon btn-delete" onclick="eliminarOT('${ot.id}')">🗑️</button>` : ''}</td></tr>`);
             });
             html += '</tbody></table>';
-            document.getElementById('otsTable').innerHTML = html || '<p style="color:#888;">No hay órdenes de trabajo</p>';
+            document.getElementById('otsTable').innerHTML = html || '<p>No hay órdenes</p>';
         }
 
-        function filtrarOTs() {
-            const search = document.getElementById('searchOT').value.toLowerCase();
-            const estado = document.getElementById('filterEstadoOT').value;
+        function filterOTs() {
             let filtered = otsData;
+            const search = document.getElementById('searchOT').value.toLowerCase();
             if (search) filtered = filtered.filter(ot => ot.numero_ot?.toLowerCase().includes(search) || ot.titulo?.toLowerCase().includes(search));
+            const estado = document.getElementById('filterEstado').value;
             if (estado) filtered = filtered.filter(ot => ot.estado === estado);
             renderizarOTs(filtered);
         }
 
-        async function cargarSelectEquipos() {
-            const { data } = await supabase.from('equipos').select('id, nombre, codigo_completo').order('nombre');
+        async function cargarEquiposSelect() {
+            const { data } = await supabase.from('equipos').select('id, nombre, codigo_completo');
             const select = document.getElementById('otEquipoId');
-            select.innerHTML = '<option value="">SELECCIONE UN EQUIPO</option>';
+            select.innerHTML = '<option value="">SELECCIONE EQUIPO</option>';
             data?.forEach(e => select.innerHTML += `<option value="${e.id}">${e.nombre} (${e.codigo_completo})</option>`);
         }
 
         async function crearOT() {
-            const nuevaOT = {
-                titulo: document.getElementById('otTitulo').value,
-                equipo_id: document.getElementById('otEquipoId').value || null,
-                descripcion: document.getElementById('otDescripcion').value,
-                prioridad: document.getElementById('otPrioridad').value,
-                tipo_mantenimiento: document.getElementById('otTipo').value,
-                estado: 'Pendiente',
-                solicitado_por: currentUser?.id
-            };
+            const nuevaOT = { titulo: document.getElementById('otTitulo').value, equipo_id: document.getElementById('otEquipoId').value || null, descripcion: document.getElementById('otDescripcion').value, prioridad: document.getElementById('otPrioridad').value, tipo_mantenimiento: document.getElementById('otTipo').value, estado: 'Pendiente', solicitado_por: currentUserId };
             if (!nuevaOT.titulo) { alert('El título es obligatorio'); return; }
             const { error } = await supabase.from('ordenes_trabajo').insert([nuevaOT]);
             if (error) alert('Error: ' + error.message);
-            else { alert('OT creada exitosamente'); closeModal('otModal'); document.getElementById('otForm').reset(); cargarOTs(); }
+            else { alert('OT creada'); closeModal(); document.getElementById('otForm').reset(); cargarOTs(); }
         }
 
         async function verOT(id) {
             const { data: ot } = await supabase.from('ordenes_trabajo').select('*, equipos(*)').eq('id', id).single();
-            const { data: actividades } = await supabase.from('actividades_ot').select('*').eq('orden_trabajo_id', id).order('orden');
+            const { data: actividades } = await supabase.from('actividades_ot').select('*').eq('orden_trabajo_id', id);
             let actHtml = '<table class="data-table"><thead><tr><th>DESCRIPCIÓN</th><th>TÉCNICO</th><th>INICIO</th><th>FIN</th><th>HORAS</th></tr></thead><tbody>';
             actividades?.forEach(a => actHtml += `<tr><td>${a.descripcion}</td><td>${a.tecnico || '-'}</td><td>${a.inicio ? new Date(a.inicio).toLocaleString() : '-'}</td><td>${a.fin ? new Date(a.fin).toLocaleString() : '-'}</td><td>${a.total_horas || '-'}</td></tr>`);
             actHtml += '</tbody></table>';
-            document.getElementById('viewOTContent').innerHTML = `
-                <div style="max-height:500px; overflow-y:auto;">
-                    <h3 style="color:#ff3b30;">${ot.numero_ot}</h3>
-                    <p><strong>📌 Título:</strong> ${ot.titulo}</p>
-                    <p><strong>🔧 Equipo:</strong> ${ot.equipos?.nombre || '-'}</p>
-                    <p><strong>⚠️ Prioridad:</strong> ${ot.prioridad}</p>
-                    <p><strong>📊 Estado:</strong> ${ot.estado}</p>
-                    <p><strong>📝 Descripción:</strong> ${ot.descripcion || '-'}</p>
-                    <hr style="border-color:#2a2a2a; margin:15px 0;">
-                    <h4>⏱️ ACTIVIDADES</h4>
-                    ${actHtml}
-                    <button class="btn" style="margin-top:15px;" onclick="closeModal('viewOTModal')">CERRAR</button>
-                </div>`;
-            openModal('viewOTModal');
+            document.getElementById('viewContent').innerHTML = `<h3>${ot.numero_ot}</h3><p><strong>${ot.titulo}</strong></p><p>Equipo: ${ot.equipos?.nombre || '-'}</p><p>Prioridad: ${ot.prioridad}</p><p>Estado: ${ot.estado}</p><hr><h4>Actividades</h4>${actHtml}<button class="btn" style="margin-top:15px;" onclick="closeViewModal()">CERRAR</button>`;
+            document.getElementById('viewModal').style.display = 'flex';
         }
 
-        async function editarOT(id) {
-            const { data: ot } = await supabase.from('ordenes_trabajo').select('*').eq('id', id).single();
-            const nuevoEstado = prompt('Nuevo estado (Pendiente, En Progreso, Completada, Cancelada):', ot.estado);
-            if (nuevoEstado && ['Pendiente', 'En Progreso', 'Completada', 'Cancelada'].includes(nuevoEstado)) {
-                await supabase.from('ordenes_trabajo').update({ estado: nuevoEstado, updated_at: new Date() }).eq('id', id);
-                cargarOTs();
-            }
-        }
-
-        async function eliminarOT(id) {
-            if (confirm('¿Eliminar esta OT y todas sus actividades?')) {
-                await supabase.from('actividades_ot').delete().eq('orden_trabajo_id', id);
-                await supabase.from('ordenes_trabajo').delete().eq('id', id);
-                cargarOTs();
-            }
-        }
+        function editarOT(id) { alert('Editar OT #' + id); }
+        async function eliminarOT(id) { if (confirm('¿Eliminar OT?')) { await supabase.from('ordenes_trabajo').delete().eq('id', id); cargarOTs(); } }
+        function openModal() { document.getElementById('otModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('otModal').style.display = 'none'; }
+        function closeViewModal() { document.getElementById('viewModal').style.display = 'none'; }
 
         init();
     </script>
