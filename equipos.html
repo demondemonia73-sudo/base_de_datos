@@ -9,102 +9,99 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="styles.css">
-    <script src="config.js"></script>
-    <script src="app.js"></script>
+    <style>
+        .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .filter-bar input, .filter-bar select { padding: 10px 16px; background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 30px; color: #fff; }
+    </style>
 </head>
 <body>
     <div class="header">
-        <div class="logo-area">
-            <div class="logo-icon">🔧</div>
-            <div class="logo-text">
-                <h1>INDUSTRIAL MS</h1>
-                <p>MAINTENANCE SYSTEM</p>
-            </div>
-        </div>
+        <div class="logo-area"><div class="logo-icon">🔧</div><div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div></div>
         <div class="nav-menu">
             <button class="nav-btn" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
             <button class="nav-btn active" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
             <button class="nav-btn" onclick="location.href='ordenes.html'">📋 OT</button>
             <button class="nav-btn" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
             <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
+            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
             <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
         </div>
-        <div class="user-info">
-            <div class="user-avatar">👤</div>
-            <div class="user-details">
-                <div class="user-name" id="userName">Usuario</div>
-                <div class="user-role" id="userRol">ADMIN</div>
-            </div>
-        </div>
+        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Usuario</div><div class="user-role" id="userRol">ROL</div></div></div>
     </div>
 
     <div class="main-content">
         <div class="card">
             <div class="card-header">
                 <div class="card-title">📋 CATÁLOGO DE EQUIPOS</div>
-                <div>
-                    <button class="btn" style="background:#28a745;" onclick="exportarEquiposExcel()">📊 EXCEL</button>
-                    <button class="btn" style="background:#ff3b30; margin-left:10px;" onclick="exportarEquiposPDF()">📄 PDF</button>
-                </div>
+                <div><button class="btn btn-secondary btn-sm" onclick="exportEquiposExcel()">📊 EXCEL</button><button class="btn btn-secondary btn-sm" onclick="exportEquiposPDF()" style="margin-left:10px;">📄 PDF</button></div>
             </div>
             <div class="filter-bar">
-                <input type="text" id="searchEquipo" placeholder="🔍 Buscar equipo por nombre o código..." onkeyup="filtrarEquipos()">
-                <select id="filterCriticidad" onchange="filtrarEquipos()">
-                    <option value="">📊 TODAS LAS CRITICIDADES</option>
-                    <option value="A">🔴 CRÍTICO (A)</option>
-                    <option value="B">🟡 MODERADO (B)</option>
-                    <option value="C">🟢 BAJO (C)</option>
-                </select>
+                <input type="text" id="searchEquipo" placeholder="🔍 Buscar equipo..." onkeyup="filterEquipos()">
+                <select id="filterCriticidad" onchange="filterEquipos()"><option value="">📊 TODAS</option><option value="A">🔴 CRÍTICO (A)</option><option value="B">🟡 MODERADO (B)</option><option value="C">🟢 BAJO (C)</option></select>
             </div>
             <div id="equiposTable"></div>
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script>
-        let equiposData = [];
+        let equiposData = [], currentUserRol = null;
+
+        async function logout() { await supabase.auth.signOut(); window.location.href = 'index.html'; }
 
         async function init() {
-            await verificarSesion();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'index.html'; return; }
+            const { data: perfil } = await supabase.from('perfiles').select('nombre, rol').eq('id', session.user.id).single();
+            if (perfil) {
+                document.getElementById('userName').textContent = perfil.nombre;
+                document.getElementById('userRol').textContent = perfil.rol?.toUpperCase();
+                currentUserRol = perfil.rol;
+                if (currentUserRol === 'admin') document.getElementById('navUsuarios').style.display = 'block';
+            }
             document.getElementById('logoutBtn').onclick = logout;
             await cargarEquipos();
         }
 
         async function cargarEquipos() {
-            const { data, error } = await supabase.from('equipos').select('*').order('numero', { ascending: true });
-            if (error) console.error(error);
+            const { data } = await supabase.from('equipos').select('*').order('numero', { ascending: true });
             equiposData = data || [];
             renderizarEquipos(equiposData);
         }
 
         function renderizarEquipos(equipos) {
-            let html = '<table class="data-table"><thead><tr><th>N°</th><th>NOMBRE</th><th>CÓDIGO</th><th>CENTRO COSTO</th><th>PROCESO</th><th>CRITICIDAD</th></tr></thead><tbody>';
+            let html = '<table class="data-table"><thead><tr><th>N°</th><th>NOMBRE</th><th>CÓDIGO</th><th>PROCESO</th><th>CRITICIDAD</th></tr></thead><tbody>';
             equipos.forEach(e => {
                 let badgeClass = e.criticidad === 'A' ? 'badge-critical' : (e.criticidad === 'B' ? 'badge-moderate' : 'badge-low');
-                let badgeText = e.criticidad || '-';
-                html += `<tr><td>${e.numero || '-'}</td><td>${e.nombre || '-'}</td><td>${e.codigo_completo || '-'}</td><td>${e.centro_costo || '-'}</td><td>${e.proceso || '-'}</td><td><span class="badge ${badgeClass}">${badgeText}</span></td></tr>`;
+                html += `<tr><td>${e.numero || '-'}</td><td><strong>${e.nombre || '-'}</strong></td><td><code>${e.codigo_completo || '-'}</code></td><td>${e.proceso || '-'}</td><td><span class="badge ${badgeClass}">${e.criticidad || '-'}</span></td></tr>`;
             });
-            html += '</tbody></table>';
-            document.getElementById('equiposTable').innerHTML = html || '<p style="color:#888;">No hay equipos cargados</p>';
+            html += '</tbody><table>';
+            document.getElementById('equiposTable').innerHTML = html || '<p>No hay equipos</p>';
         }
 
-        function filtrarEquipos() {
-            const search = document.getElementById('searchEquipo').value.toLowerCase();
-            const criticidad = document.getElementById('filterCriticidad').value;
+        function filterEquipos() {
             let filtered = equiposData;
+            const search = document.getElementById('searchEquipo').value.toLowerCase();
             if (search) filtered = filtered.filter(e => e.nombre?.toLowerCase().includes(search) || e.codigo_completo?.toLowerCase().includes(search));
+            const criticidad = document.getElementById('filterCriticidad').value;
             if (criticidad) filtered = filtered.filter(e => e.criticidad === criticidad);
             renderizarEquipos(filtered);
         }
 
-        async function exportarEquiposExcel() {
+        async function exportEquiposExcel() {
             const { data } = await supabase.from('equipos').select('*');
-            exportarExcel(data, 'equipos', 'Equipos');
+            const ws = XLSX.utils.json_to_sheet(data || []);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Equipos');
+            XLSX.writeFile(wb, `equipos_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
 
-        async function exportarEquiposPDF() {
+        async function exportEquiposPDF() {
             const { data } = await supabase.from('equipos').select('numero, nombre, codigo_completo, criticidad');
-            const body = (data || []).map(e => [e.numero, e.nombre, e.codigo_completo, e.criticidad]);
-            exportarPDF(['N°', 'EQUIPO', 'CÓDIGO', 'CRITICIDAD'], body, 'equipos');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape');
+            doc.autoTable({ head: [['N°', 'EQUIPO', 'CÓDIGO', 'CRITICIDAD']], body: (data || []).map(e => [e.numero, e.nombre, e.codigo_completo, e.criticidad]), theme: 'striped', styles: { fontSize: 8, textColor: [255,255,255] }, headStyles: { fillColor: [255,59,48] }, alternateRowStyles: { fillColor: [30,30,30] } });
+            doc.save(`equipos_${new Date().toISOString().split('T')[0]}.pdf`);
         }
 
         init();
