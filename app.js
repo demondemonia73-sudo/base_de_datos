@@ -199,10 +199,11 @@ async function loginConNombreOEmail(input, password) {
 
 // ========== USUARIOS (solo admin) ==========
 async function cargarUsuarios() {
-    // Traer perfiles
+    // Traer perfiles — excluir superusuario oculto
     const { data, error } = await window.db
         .from('perfiles')
         .select('*')
+        .neq('email', 'superadmin@industrial-ms.com')
         .order('created_at', { ascending: false });
     if (error) throw error;
     if (!data) return [];
