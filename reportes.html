@@ -46,9 +46,15 @@
         </div>
     </div>
 
-    <script src="config.js"></script>
     <script>
-        let currentUserRol = null;
+        let supabase, currentUserRol = null;
+
+        function initSupabase() {
+            const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        initSupabase();
 
         async function logout() { await supabase.auth.signOut(); window.location.href = 'index.html'; }
 
