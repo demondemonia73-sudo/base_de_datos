@@ -54,7 +54,7 @@
 
 <script>
     // Verificar si ya hay sesión activa
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    window.db.auth.getSession().then(({ data: { session } }) => {
         if (session) window.location.href = 'dashboard.html';
     });
 
@@ -62,7 +62,7 @@
     (async () => {
         const el = document.getElementById('connectionStatus');
         try {
-            const { error } = await supabase.from('perfiles').select('count', { count: 'exact', head: true });
+            const { error } = await window.db.from('perfiles').select('count', { count: 'exact', head: true });
             if (error) throw error;
             el.textContent = '✓ Conectado — Supabase Online';
             el.style.color = '#4ade80';
@@ -101,7 +101,7 @@
         btn.disabled = true;
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await window.db.auth.signInWithPassword({ email, password });
             if (error) throw error;
 
             const { data: perfil, error: perfilErr } = await supabase
