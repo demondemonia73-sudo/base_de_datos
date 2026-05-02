@@ -32,14 +32,14 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title">⏱️ ACTIVIDADES</div>
-                <button class="btn" onclick="openModal()">➕ NUEVA ACTIVIDAD</button>
+                <button class="btn" onclick="openActividadModal()">➕ NUEVA ACTIVIDAD</button>
             </div>
             <div id="actividadesTable"></div>
         </div>
     </div>
 
     <div id="actividadModal" class="modal"><div class="modal-content">
-        <div class="modal-header"><h3>➕ NUEVA ACTIVIDAD</h3><span class="close-modal" onclick="closeModal()">&times;</span></div>
+        <div class="modal-header"><h3>➕ NUEVA ACTIVIDAD</h3><span class="close-modal" onclick="closeModal('actividadModal')">&times;</span></div>
         <form id="actividadForm" onsubmit="event.preventDefault(); crearActividad()">
             <div class="form-group"><label>OT</label><select id="actividadOtId" required></select></div>
             <div class="form-group"><label>DESCRIPCIÓN *</label><textarea id="actividadDescripcion" rows="3" required></textarea></div>
@@ -51,9 +51,15 @@
         </form>
     </div></div>
 
-    <script src="config.js"></script>
     <script>
-        let currentUserRol = null;
+        let supabase, currentUserRol = null;
+
+        function initSupabase() {
+            const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        initSupabase();
 
         async function logout() { await supabase.auth.signOut(); window.location.href = 'index.html'; }
 
@@ -80,8 +86,14 @@
         function renderizarActividades(actividades) {
             let html = '<table class="data-table"><thead><tr><th>OT</th><th>DESCRIPCIÓN</th><th>TÉCNICO</th><th>FECHA</th><th>ESTADO</th><th>ACCIONES</th></tr></thead><tbody>';
             actividades.forEach(a => {
-                html += `<tr><td><strong>${a.ordenes_trabajo?.numero_ot || '-'}</strong></td><td>${a.descripcion?.substring(0, 50) || '-'}${a.descripcion?.length > 50 ? '...' : ''}</td><td>${a.tecnico || '-'}</td><td>${new Date(a.created_at).toLocaleDateString()}</td><td><span class="badge badge-pending">${a.estado || 'Pendiente'}</span></td>
-                <td class="action-buttons">${(currentUserRol === 'admin' || currentUserRol === 'supervisor' || currentUserRol === 'tecnico') ? `<button class="btn-icon btn-edit" onclick="editarActividad('${a.id}')">✏️</button>` : ''}${currentUserRol === 'admin' ? `<button class="btn-icon btn-delete" onclick="eliminarActividad('${a.id}')">🗑️</button>` : ''}</td></tr>`);
+                html += `<tr>
+                    <td><strong>${a.ordenes_trabajo?.numero_ot || '-'}</strong></td>
+                    <td>${a.descripcion?.substring(0, 50) || '-'}${a.descripcion?.length > 50 ? '...' : ''}</td>
+                    <td>${a.tecnico || '-'}</td>
+                    <td>${new Date(a.created_at).toLocaleDateString()}</td>
+                    <td><span class="badge badge-pending">${a.estado || 'Pendiente'}</span></td>
+                    <td class="action-buttons">${(currentUserRol === 'admin' || currentUserRol === 'supervisor' || currentUserRol === 'tecnico') ? `<button class="btn-icon btn-edit" onclick="editarActividad('${a.id}')">✏️</button>` : ''}${currentUserRol === 'admin' ? `<button class="btn-icon btn-delete" onclick="eliminarActividad('${a.id}')">🗑️</button>` : ''}</td>
+                </tr>`;
             });
             html += '</tbody></table>';
             document.getElementById('actividadesTable').innerHTML = html || '<p>No hay actividades</p>';
@@ -103,13 +115,13 @@
             if (!nuevaActividad.descripcion) { alert('La descripción es obligatoria'); return; }
             const { error } = await supabase.from('actividades_ot').insert([nuevaActividad]);
             if (error) alert('Error: ' + error.message);
-            else { alert('Actividad creada'); closeModal(); document.getElementById('actividadForm').reset(); cargarActividades(); }
+            else { alert('Actividad creada'); closeModal('actividadModal'); document.getElementById('actividadForm').reset(); cargarActividades(); }
         }
 
         function editarActividad(id) { alert('Editar actividad #' + id); }
         async function eliminarActividad(id) { if (confirm('¿Eliminar actividad?')) { await supabase.from('actividades_ot').delete().eq('id', id); cargarActividades(); } }
-        function openModal() { document.getElementById('actividadModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('actividadModal').style.display = 'none'; }
+        function openActividadModal() { document.getElementById('actividadModal').style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
         init();
     </script>
