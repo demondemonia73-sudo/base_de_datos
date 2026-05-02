@@ -1,1 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial MS - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-area"><div class="logo-icon">🔧</div><div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div></div>
+        <div class="nav-menu">
+            <button class="nav-btn active" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
+            <button class="nav-btn" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
+            <button class="nav-btn" onclick="location.href='ordenes.html'">📋 OT</button>
+            <button class="nav-btn" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
+            <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
+            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
+            <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
+        </div>
+        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Usuario</div><div class="user-role" id="userRol">ROL</div></div></div>
+    </div>
 
+    <div class="main-content">
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-label">TOTAL EQUIPOS</div><div class="stat-value" id="totalEquipos">0</div></div>
+            <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">EQUIPOS CRÍTICOS (A)</div><div class="stat-value" id="equiposCriticos">0</div></div>
+            <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-label">OT PENDIENTES</div><div class="stat-value" id="otsPendientes">0</div></div>
+            <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">OT COMPLETADAS</div><div class="stat-value" id="otsCompletadas">0</div></div>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-container"><h3>📊 ÓRDENES POR ESTADO</h3><canvas id="estadosChart"></canvas></div>
+            <div class="chart-container"><h3>📊 EQUIPOS POR CRITICIDAD</h3><canvas id="criticidadChart"></canvas></div>
+        </div>
+
+        <div class="card"><div class="card-header"><div class="card-title">📋 ÚLTIMAS ÓRDENES</div><button class="nav-btn" onclick="location.href='ordenes.html'">VER TODAS →</button></div><div id="ultimasOTs"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">⚠️ EQUIPOS CRÍTICOS</div><button class="nav-btn" onclick="location.href='equipos.html'">VER TODOS →</button></div><div id="equiposCriticosList"></div></div>
+        <div class="card"><div class="card-title">⏱️ ACTIVIDADES RECIENTES</div><div id="actividadesRecientes"></div></div>
+    </div>
+
+    <script>
+        let estadosChart, criticidadChart;
+
+        async function init() {
+            const { user, perfil } = await verificarSesion();
+            if (!user) return;
+            
+            document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
+            document.getElementById('userRol').textContent = perfil?.rol?.toUpperCase() || 'ROL';
+            
+            if (perfil?.rol === 'admin') {
+                document.getElementById('navUsuarios').style.display = 'block';
+            }
+            
+            document.getElementById('logoutBtn').onclick = logout;
+            await loadDashboard();
+            setInterval(loadDashboard, 30000);
+        }
+
+        async function loadDashboard() {
+            const stats = await cargarEstadisticasDashboard();
+            document.getElementById('totalEquipos').textContent = stats.totalEquipos || 0;
+            document.getElementById('equiposCriticos').textContent = stats.equiposCriticos || 0;
+            document.getElementById('otsPendientes').textContent = stats.otsPendientes || 0;
+            document.getElementById('otsCompletadas').textContent = stats.otsCompletadas || 0;
+
+            // Gráfico estados
+            const { data: estados } = await supabase.from('ordenes_trabajo').select('estado');
+            const counts = { Pendiente: 0, 'En Progreso': 0, Completada: 0, Cancelada: 0 };
+            estados?.forEach(ot => counts[ot.estado] = (counts[ot.estado] || 0) + 1);
+            if (estadosChart) estadosChart.destroy();
+            estadosChart = new Chart(document.getElementById('estadosChart'), {
+                type: 'doughnut',
+                data: { labels: ['Pendiente', 'En Progreso', 'Completada', 'Cancelada'], datasets: [{ data: [counts.Pendiente, counts['En Progreso'], counts.Completada, counts.Cancelada], backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#6c757d'] }] },
+                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } }
+            });
+
+            // Gráfico criticidad
+            const { data: criticidad } = await supabase.from('equipos').select('criticidad');
+            const crit = { A: 0, B: 0, C: 0 };
+            criticidad?.forEach(e => { if (e.criticidad) crit[e.criticidad]++; });
+            if (criticidadChart) criticidadChart.destroy();
+            criticidadChart = new Chart(document.getElementById('criticidadChart'), {
+                type: 'bar',
+                data: { labels: ['Crítico (A)', 'Moderado (B)', 'Bajo (C)'], datasets: [{ label: 'Cantidad', data: [crit.A, crit.B, crit.C], backgroundColor: ['#ff3b30', '#ffc107', '#28a745'] }] },
+                options: { responsive: true, scales: { y: { ticks: { color: '#fff' }, grid: { color: '#2a2a2a' } }, x: { ticks: { color: '#fff' } } } }
+            });
+
+            // Últimas OT
+            const { data: ultimasOTs } = await supabase.from('ordenes_trabajo').select('numero_ot, titulo, prioridad, estado, created_at').order('created_at', { ascending: false }).limit(5);
+            let otsHtml = '<table class="data-table"><thead><tr><th>N° OT</th><th>TÍTULO</th><th>PRIORIDAD</th><th>ESTADO</th><th>FECHA</th></tr></thead><tbody>';
+            ultimasOTs?.forEach(ot => otsHtml += `<tr><td><strong>${ot.numero_ot}</strong></td><td>${ot.titulo}</td><td><span class="badge badge-critical">${ot.prioridad}</span></td><td><span class="badge badge-pending">${ot.estado}</span></td><td>${new Date(ot.created_at).toLocaleDateString()}</td></tr>`);
+            otsHtml += '</tbody></table>';
+            document.getElementById('ultimasOTs').innerHTML = otsHtml || '<p>No hay órdenes</p>';
+
+            // Equipos críticos
+            const { data: criticos } = await supabase.from('equipos').select('nombre, codigo_completo').eq('criticidad', 'A').limit(10);
+            let critHtml = '<table class="data-table"><thead><tr><th>EQUIPO</th><th>CÓDIGO</th><th>CRITICIDAD</th></tr></thead><tbody>';
+            criticos?.forEach(e => critHtml += `<tr><td>${e.nombre}</td><td><code>${e.codigo_completo}</code></td><td><span class="badge badge-critical">A - CRÍTICO</span></td></tr>`);
+            critHtml += '</tbody></table>';
+            document.getElementById('equiposCriticosList').innerHTML = critHtml || '<p>Sin equipos críticos</p>';
+
+            // Actividades recientes
+            const { data: actividades } = await supabase.from('actividades_ot').select('descripcion, tecnico, estado, created_at, ordenes_trabajo(numero_ot)').order('created_at', { ascending: false }).limit(5);
+            let actHtml = '<table class="data-table"><thead><tr><th>OT</th><th>ACTIVIDAD</th><th>TÉCNICO</th><th>ESTADO</th><th>FECHA</th></tr></thead><tbody>';
+            actividades?.forEach(a => actHtml += `<tr><td><strong>${a.ordenes_trabajo?.numero_ot || '-'}</strong></td><td>${a.descripcion?.substring(0, 40) || '-'}${a.descripcion?.length > 40 ? '...' : ''}</td><td>${a.tecnico || '-'}</td><td><span class="badge badge-pending">${a.estado || '-'}</span></td><td>${new Date(a.created_at).toLocaleDateString()}</td></tr>`);
+            actHtml += '</tbody></table>';
+            document.getElementById('actividadesRecientes').innerHTML = actHtml || '<p>Sin actividades</p>';
+        }
+
+        init();
+    </script>
+</body>
+</html>
