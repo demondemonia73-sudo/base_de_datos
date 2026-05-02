@@ -122,6 +122,39 @@
     </div>
 </div>
 
+<!-- ===== MODAL: Cambiar Contraseña ===== -->
+<div id="modalCambiarPwd" class="modal">
+    <div class="modal-content" style="max-width:420px;">
+        <div class="modal-header">
+            <h3>🔑 Cambiar Contraseña</h3>
+            <span class="close-modal" onclick="closeModal('modalCambiarPwd')">✕</span>
+        </div>
+        <input type="hidden" id="pwdUserId">
+        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px;">
+            Cambiando contraseña de: <strong id="pwdUserNombre" style="color:var(--text-primary);"></strong>
+        </p>
+        <div class="form-group">
+            <label>Nueva Contraseña *</label>
+            <div class="password-wrapper">
+                <input type="password" id="newPassword" placeholder="Mínimo 6 caracteres">
+                <button type="button" class="toggle-password" onclick="
+                    const i = document.getElementById('newPassword');
+                    i.type = i.type==='password'?'text':'password';
+                    this.textContent = i.type==='password'?'👁':'🙈';
+                ">👁</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Confirmar Nueva Contraseña *</label>
+            <input type="password" id="confirmPassword" placeholder="Repita la contraseña">
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="closeModal('modalCambiarPwd')">Cancelar</button>
+            <button class="btn" onclick="submitCambiarPwd()">Actualizar Contraseña</button>
+        </div>
+    </div>
+</div>
+
 <script>
     let _usuarios = [];
 
@@ -163,23 +196,36 @@
 
         let html = `<table class="data-table">
             <thead><tr>
-                <th>Nombre</th><th>Email</th><th>Rol</th><th>Teléfono</th>
+                <th>Nombre</th><th>Email</th><th>Rol</th><th>Contraseña</th>
                 <th>Estado</th><th>Registro</th><th>Acciones</th>
             </tr></thead><tbody>`;
 
         lista.forEach(u => {
+            // Contraseña visible del admin (de credenciales_admin)
+            const cred = u.credenciales_admin?.[0];
+            const pwdVisible = cred?.password_visible || '—';
+            const pwdDate = cred?.updated_at ? formatFecha(cred.updated_at) : '';
+
             html += `<tr>
                 <td><strong>${u.nombre || '—'}</strong></td>
                 <td style="color:var(--text-secondary);font-size:12px;">${u.email}</td>
                 <td>${rolBadge(u.rol)}</td>
-                <td style="color:var(--text-secondary)">${u.telefono || '—'}</td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <code id="pwd-${u.id}" style="filter:blur(4px);cursor:pointer;transition:filter 0.2s;"
+                            onclick="this.style.filter='none'"
+                            title="Clic para ver">${pwdVisible}</code>
+                        ${pwdDate ? `<span style="font-size:10px;color:var(--text-muted);">${pwdDate}</span>` : ''}
+                    </div>
+                </td>
                 <td>${u.activo
                     ? '<span class="badge badge-active">ACTIVO</span>'
                     : '<span class="badge badge-inactive">INACTIVO</span>'}</td>
                 <td style="color:var(--text-muted);font-size:12px;">${formatFecha(u.created_at)}</td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn-icon btn-edit"   onclick="abrirEditar('${u.id}')" title="Editar">✏️</button>
+                        <button class="btn-icon btn-edit"   onclick="abrirEditar('${u.id}')" title="Editar datos">✏️</button>
+                        <button class="btn-icon btn-view"   onclick="abrirCambiarPwd('${u.id}', '${u.nombre}')" title="Cambiar contraseña">🔑</button>
                         <button class="btn-icon btn-toggle" onclick="toggleActivo('${u.id}', ${!u.activo})"
                             title="${u.activo ? 'Desactivar' : 'Activar'}">${u.activo ? '🔴' : '🟢'}</button>
                     </div>
@@ -287,6 +333,36 @@
             Registro:  new Date(u.created_at).toLocaleDateString('es-ES'),
         }));
         await exportarExcel(data, 'usuarios', 'Usuarios');
+    }
+
+    function abrirCambiarPwd(id, nombre) {
+        document.getElementById('pwdUserId').value       = id;
+        document.getElementById('pwdUserNombre').textContent = nombre;
+        document.getElementById('newPassword').value     = '';
+        document.getElementById('confirmPassword').value = '';
+        openModal('modalCambiarPwd');
+    }
+
+    async function submitCambiarPwd() {
+        const id  = document.getElementById('pwdUserId').value;
+        const pwd = document.getElementById('newPassword').value;
+        const pwd2 = document.getElementById('confirmPassword').value;
+
+        if (!pwd || pwd.length < 6) {
+            mostrarToast('La contraseña debe tener mínimo 6 caracteres', 'warning'); return;
+        }
+        if (pwd !== pwd2) {
+            mostrarToast('Las contraseñas no coinciden', 'warning'); return;
+        }
+
+        try {
+            await cambiarPasswordAdmin(id, pwd);
+            mostrarToast('Contraseña actualizada correctamente', 'success');
+            closeModal('modalCambiarPwd');
+            await loadUsuarios();
+        } catch (err) {
+            mostrarToast('Error: ' + err.message, 'error');
+        }
     }
 
     init();
