@@ -199,13 +199,27 @@ async function loginConNombreOEmail(input, password) {
 
 // ========== USUARIOS (solo admin) ==========
 async function cargarUsuarios() {
-    // Traer perfiles junto con su credencial visible si existe
+    // Traer perfiles
     const { data, error } = await window.db
         .from('perfiles')
-        .select('*, credenciales_admin(password_visible, updated_at)')
+        .select('*')
         .order('created_at', { ascending: false });
     if (error) throw error;
-    return data || [];
+    if (!data) return [];
+
+    // Intentar traer credenciales (solo funciona si es admin)
+    const { data: creds } = await window.db
+        .from('credenciales_admin')
+        .select('usuario_id, password_visible, updated_at');
+
+    // Combinar manualmente
+    const credsMap = {};
+    (creds || []).forEach(c => { credsMap[c.usuario_id] = c; });
+
+    return data.map(u => ({
+        ...u,
+        credenciales_admin: credsMap[u.id] ? [credsMap[u.id]] : []
+    }));
 }
 
 async function crearUsuario(email, password, nombre, rol, telefono = '') {
