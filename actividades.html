@@ -3,124 +3,306 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial MS - Actividades</title>
+    <title>Industrial MS — Actividades</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="styles.css">
     <script src="config.js"></script>
     <script src="app.js"></script>
 </head>
 <body>
-    <div class="header">
-        <div class="logo-area"><div class="logo-icon">🔧</div><div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div></div>
-        <div class="nav-menu">
-            <button class="nav-btn" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
-            <button class="nav-btn" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
-            <button class="nav-btn" onclick="location.href='ordenes.html'">📋 OT</button>
-            <button class="nav-btn active" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
-            <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
-            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
-            <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
+
+<header class="header">
+    <div class="logo-area">
+        <div class="logo-icon">🔧</div>
+        <div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div>
+    </div>
+    <nav class="nav-menu">
+        <button class="nav-btn" onclick="location.href='dashboard.html'">📊 Dashboard</button>
+        <button class="nav-btn" onclick="location.href='equipos.html'">🔌 Equipos</button>
+        <button class="nav-btn" onclick="location.href='ordenes.html'">📋 Órdenes</button>
+        <button class="nav-btn active" onclick="location.href='actividades.html'">⏱ Actividades</button>
+        <button class="nav-btn" onclick="location.href='reportes.html'">📈 Reportes</button>
+        <button class="nav-btn" id="navUsuarios" onclick="location.href='usuarios.html'" style="display:none;">👥 Usuarios</button>
+        <button class="nav-btn logout-btn" id="logoutBtn">🚪 Salir</button>
+    </nav>
+    <div class="user-info">
+        <div class="user-avatar">👤</div>
+        <div><div class="user-name" id="userName">—</div><div class="user-role" id="userRol">—</div></div>
+    </div>
+</header>
+
+<main class="main-content">
+
+    <div class="page-header">
+        <div>
+            <div class="page-title">Actividades</div>
+            <div class="page-subtitle" id="actsCount">Cargando...</div>
         </div>
-        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Usuario</div><div class="user-role" id="userRol">ROL</div></div></div>
+        <button class="btn" onclick="openModal('modalNuevaAct')">➕ Nueva Actividad</button>
     </div>
 
-    <div class="main-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">⏱️ ACTIVIDADES</div>
-                <button class="btn" onclick="openModal('actividadModal')">➕ NUEVA ACTIVIDAD</button>
+    <div class="card">
+        <div class="filter-bar">
+            <input type="text" id="searchAct" placeholder="🔍 Buscar por descripción o técnico..." oninput="filtrar()">
+            <select id="filterEstado" onchange="filtrar()">
+                <option value="">Todos los estados</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="En Progreso">En Progreso</option>
+                <option value="Completada">Completada</option>
+            </select>
+        </div>
+        <div class="table-wrapper" id="actsTable">
+            <div class="empty-state"><div class="empty-icon">⏱</div><p>Cargando actividades...</p></div>
+        </div>
+    </div>
+
+</main>
+
+<!-- ===== MODAL: Nueva Actividad ===== -->
+<div id="modalNuevaAct" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>➕ Nueva Actividad</h3>
+            <span class="close-modal" onclick="closeModal('modalNuevaAct')">✕</span>
+        </div>
+        <div class="form-group">
+            <label>Orden de Trabajo *</label>
+            <select id="actOtId"></select>
+        </div>
+        <div class="form-group">
+            <label>Descripción *</label>
+            <textarea id="actDesc" rows="3" placeholder="Describa la actividad realizada..."></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Técnico</label>
+                <input type="text" id="actTecnico" placeholder="Nombre del técnico">
             </div>
-            <div id="actividadesTable"></div>
+            <div class="form-group">
+                <label>Estado</label>
+                <select id="actEstado">
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En Progreso">En Progreso</option>
+                    <option value="Completada">Completada</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Fecha/Hora Inicio</label>
+                <input type="datetime-local" id="actInicio">
+            </div>
+            <div class="form-group">
+                <label>Fecha/Hora Fin</label>
+                <input type="datetime-local" id="actFin">
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="closeModal('modalNuevaAct')">Cancelar</button>
+            <button class="btn" onclick="submitNuevaAct()">Crear Actividad</button>
         </div>
     </div>
+</div>
 
-    <!-- Modal Nueva Actividad -->
-    <div id="actividadModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><h3>➕ NUEVA ACTIVIDAD</h3><span class="close-modal" onclick="closeModal('actividadModal')">&times;</span></div>
-            <form id="actividadForm" onsubmit="event.preventDefault(); crearActividad()">
-                <div class="form-group"><label>OT</label><select id="actividadOtId" required></select></div>
-                <div class="form-group"><label>DESCRIPCIÓN *</label><textarea id="actividadDescripcion" rows="3" required></textarea></div>
-                <div class="form-group"><label>TÉCNICO</label><input type="text" id="actividadTecnico"></div>
-                <div class="form-group"><label>INICIO</label><input type="datetime-local" id="actividadInicio"></div>
-                <div class="form-group"><label>FIN</label><input type="datetime-local" id="actividadFin"></div>
-                <div class="form-group"><label>ESTADO</label><select id="actividadEstado"><option value="Pendiente">Pendiente</option><option value="En Progreso">En Progreso</option><option value="Completada">Completada</option></select></div>
-                <button type="submit" class="btn">CREAR</button>
-            </form>
+<!-- ===== MODAL: Editar Actividad ===== -->
+<div id="modalEditarAct" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>✏️ Editar Actividad</h3>
+            <span class="close-modal" onclick="closeModal('modalEditarAct')">✕</span>
+        </div>
+        <input type="hidden" id="editActId">
+        <div class="form-group">
+            <label>Descripción</label>
+            <textarea id="editActDesc" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Técnico</label>
+                <input type="text" id="editActTecnico">
+            </div>
+            <div class="form-group">
+                <label>Estado</label>
+                <select id="editActEstado">
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En Progreso">En Progreso</option>
+                    <option value="Completada">Completada</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Fecha/Hora Inicio</label>
+                <input type="datetime-local" id="editActInicio">
+            </div>
+            <div class="form-group">
+                <label>Fecha/Hora Fin</label>
+                <input type="datetime-local" id="editActFin">
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="closeModal('modalEditarAct')">Cancelar</button>
+            <button class="btn" onclick="submitEditarAct()">Guardar Cambios</button>
         </div>
     </div>
+</div>
 
-    <script>
-        async function init() {
-            const { user, perfil } = await verificarSesion();
-            if (!user) return;
-            document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
-            document.getElementById('userRol').textContent = perfil?.rol?.toUpperCase() || 'ROL';
-            if (perfil?.rol === 'admin') document.getElementById('navUsuarios').style.display = 'block';
-            document.getElementById('logoutBtn').onclick = logout;
-            await cargarActividades();
-            await cargarSelectOT();
+<script>
+    let _acts = [];
+
+    async function init() {
+        await cargarHeader('actividades');
+        await loadActs();
+        await poblarOTs();
+    }
+
+    async function loadActs() {
+        try {
+            _acts = await cargarActividades();
+            document.getElementById('actsCount').textContent = `${_acts.length} actividades registradas`;
+            renderizar(_acts);
+        } catch (err) {
+            mostrarToast('Error cargando actividades: ' + err.message, 'error');
+        }
+    }
+
+    function renderizar(lista) {
+        if (!lista.length) {
+            document.getElementById('actsTable').innerHTML =
+                '<div class="empty-state"><div class="empty-icon">🔍</div><p>No se encontraron actividades</p></div>';
+            return;
         }
 
-        async function cargarActividades() {
-            const data = await window.cargarActividades();
-            renderizarActividades(data);
+        let html = `<table class="data-table">
+            <thead><tr>
+                <th>OT</th><th>Descripción</th><th>Técnico</th>
+                <th>Inicio</th><th>Fin</th><th>Horas</th><th>Estado</th><th>Acciones</th>
+            </tr></thead><tbody>`;
+
+        lista.forEach(a => {
+            const desc = (a.descripcion || '—').substring(0, 50) + (a.descripcion?.length > 50 ? '…' : '');
+            html += `<tr>
+                <td><code>${a.ordenes_trabajo?.numero_ot || '—'}</code></td>
+                <td>${desc}</td>
+                <td style="color:var(--text-secondary)">${a.tecnico || '—'}</td>
+                <td style="font-size:11px;color:var(--text-muted)">${formatFechaHora(a.inicio)}</td>
+                <td style="font-size:11px;color:var(--text-muted)">${formatFechaHora(a.fin)}</td>
+                <td style="font-family:var(--font-mono);font-size:12px">${a.total_horas_numeric != null ? a.total_horas_numeric + ' h' : '—'}</td>
+                <td>${badgeEstado(a.estado || 'Pendiente')}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-icon btn-edit"   onclick="doEditarAct(${a.id})" title="Editar">✏️</button>
+                        <button class="btn-icon btn-delete" onclick="doBorrarAct(${a.id})" title="Eliminar">🗑</button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+
+        document.getElementById('actsTable').innerHTML = html + '</tbody></table>';
+    }
+
+    function filtrar() {
+        const q  = document.getElementById('searchAct').value.toLowerCase();
+        const es = document.getElementById('filterEstado').value;
+
+        let r = _acts;
+        if (q)  r = r.filter(a => a.descripcion?.toLowerCase().includes(q) || a.tecnico?.toLowerCase().includes(q));
+        if (es) r = r.filter(a => a.estado === es);
+        renderizar(r);
+    }
+
+    async function poblarOTs() {
+        const { data } = await supabase.from('ordenes_trabajo')
+            .select('id, numero_ot, titulo').order('id', { ascending: false });
+        const sel = document.getElementById('actOtId');
+        sel.innerHTML = '<option value="">— Seleccione OT —</option>';
+        data?.forEach(ot => sel.innerHTML += `<option value="${ot.id}">${ot.numero_ot} · ${ot.titulo}</option>`);
+    }
+
+    async function submitNuevaAct() {
+        const desc = document.getElementById('actDesc').value.trim();
+        if (!desc) { mostrarToast('La descripción es obligatoria', 'warning'); return; }
+
+        const inicio = document.getElementById('actInicio').value;
+        const fin    = document.getElementById('actFin').value;
+        let horas = null;
+        if (inicio && fin) {
+            const diff = (new Date(fin) - new Date(inicio)) / (1000 * 60 * 60);
+            horas = diff > 0 ? parseFloat(diff.toFixed(2)) : null;
         }
 
-        function renderizarActividades(actividades) {
-            let html = '<table class="data-table"><thead><tr><th>OT</th><th>DESCRIPCIÓN</th><th>TÉCNICO</th><th>FECHA</th><th>ESTADO</th><th>ACCIONES</th></tr></thead><tbody>';
-            actividades.forEach(a => {
-                html += `<tr>
-                    <td><strong>${a.ordenes_trabajo?.numero_ot || '-'}</strong></td>
-                    <td>${a.descripcion?.substring(0, 50) || '-'}${a.descripcion?.length > 50 ? '...' : ''}</td>
-                    <td>${a.tecnico || '-'}</td>
-                    <td>${new Date(a.created_at).toLocaleDateString()}</td>
-                    <td><span class="badge badge-pending">${a.estado || 'Pendiente'}</span></td>
-                    <td class="action-buttons">
-                        <button class="btn-icon btn-edit" onclick="editarActividad('${a.id}')">✏️</button>
-                        <button class="btn-icon btn-delete" onclick="eliminarActividad('${a.id}')">🗑️</button>
-                    </td>
-                </tr>`;
-            });
-            html += '</tbody></table>';
-            document.getElementById('actividadesTable').innerHTML = html || '<p>No hay actividades</p>';
-        }
-
-        async function cargarSelectOT() {
-            const { data } = await supabase.from('ordenes_trabajo').select('id, numero_ot, titulo');
-            const select = document.getElementById('actividadOtId');
-            select.innerHTML = '<option value="">SELECCIONE OT</option>';
-            data?.forEach(ot => select.innerHTML += `<option value="${ot.id}">${ot.numero_ot} - ${ot.titulo}</option>`);
-        }
-
-        async function crearActividad() {
-            const inicio = document.getElementById('actividadInicio').value;
-            const fin = document.getElementById('actividadFin').value;
-            let totalHoras = null;
-            if (inicio && fin) totalHoras = ((new Date(fin) - new Date(inicio)) / (1000 * 60 * 60)).toFixed(2);
-            const nuevaActividad = {
-                orden_trabajo_id: document.getElementById('actividadOtId').value || null,
-                descripcion: document.getElementById('actividadDescripcion').value,
-                tecnico: document.getElementById('actividadTecnico').value,
+        try {
+            await crearActividad({
+                orden_trabajo_id: document.getElementById('actOtId').value || null,
+                descripcion: desc,
+                tecnico: document.getElementById('actTecnico').value || null,
+                estado: document.getElementById('actEstado').value,
                 inicio: inicio || null,
                 fin: fin || null,
-                total_horas_numeric: totalHoras,
-                estado: document.getElementById('actividadEstado').value
-            };
-            if (!nuevaActividad.descripcion) { alert('La descripción es obligatoria'); return; }
-            try {
-                await window.crearActividad(nuevaActividad);
-                alert('Actividad creada');
-                closeModal('actividadModal');
-                document.getElementById('actividadForm').reset();
-                await cargarActividades();
-            } catch (error) { alert('Error: ' + error.message); }
+                total_horas_numeric: horas,
+            });
+            mostrarToast('Actividad creada correctamente', 'success');
+            closeModal('modalNuevaAct');
+            document.getElementById('actDesc').value = '';
+            document.getElementById('actTecnico').value = '';
+            await loadActs();
+        } catch (err) {
+            mostrarToast('Error: ' + err.message, 'error');
         }
+    }
 
-        function editarActividad(id) { alert('Editar actividad #' + id); }
-        async function eliminarActividad(id) { if (confirm('¿Eliminar actividad?')) { await supabase.from('actividades_ot').delete().eq('id', id); await cargarActividades(); } }
+    function doEditarAct(id) {
+        const a = _acts.find(x => x.id === id);
+        if (!a) return;
+        document.getElementById('editActId').value     = a.id;
+        document.getElementById('editActDesc').value   = a.descripcion || '';
+        document.getElementById('editActTecnico').value = a.tecnico || '';
+        document.getElementById('editActEstado').value = a.estado || 'Pendiente';
+        document.getElementById('editActInicio').value = a.inicio
+            ? new Date(a.inicio).toISOString().slice(0,16) : '';
+        document.getElementById('editActFin').value = a.fin
+            ? new Date(a.fin).toISOString().slice(0,16) : '';
+        openModal('modalEditarAct');
+    }
 
-        init();
-    </script>
+    async function submitEditarAct() {
+        const id     = document.getElementById('editActId').value;
+        const inicio = document.getElementById('editActInicio').value;
+        const fin    = document.getElementById('editActFin').value;
+        let horas = null;
+        if (inicio && fin) {
+            const diff = (new Date(fin) - new Date(inicio)) / (1000 * 60 * 60);
+            horas = diff > 0 ? parseFloat(diff.toFixed(2)) : null;
+        }
+        try {
+            await actualizarActividad(id, {
+                descripcion: document.getElementById('editActDesc').value,
+                tecnico: document.getElementById('editActTecnico').value || null,
+                estado: document.getElementById('editActEstado').value,
+                inicio: inicio || null,
+                fin: fin || null,
+                total_horas_numeric: horas,
+            });
+            mostrarToast('Actividad actualizada', 'success');
+            closeModal('modalEditarAct');
+            await loadActs();
+        } catch (err) {
+            mostrarToast('Error: ' + err.message, 'error');
+        }
+    }
+
+    async function doBorrarAct(id) {
+        if (!confirm('¿Eliminar esta actividad?')) return;
+        try {
+            await eliminarActividad(id);
+            mostrarToast('Actividad eliminada', 'success');
+            await loadActs();
+        } catch (err) {
+            mostrarToast('Error: ' + err.message, 'error');
+        }
+    }
+
+    init();
+</script>
 </body>
 </html>
