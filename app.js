@@ -2,15 +2,15 @@
 // APP.JS — Funciones globales · Industrial MS
 // =====================================================
 
-// Una sola declaración de supabase en todo el proyecto
-const supabase = window._supabaseClient;
+// Referencia al cliente — sin redeclarar 'supabase' que ya usa la librería CDN
+window.db = window._supabaseClient;
 
 // ========== AUTENTICACIÓN ==========
 async function verificarSesion() {
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await window.db.auth.getSession();
         if (!session) { window.location.href = 'index.html'; return null; }
-        const { data: perfil } = await supabase
+        const { data: perfil } = await window.db
             .from('perfiles').select('nombre, rol, apellido')
             .eq('id', session.user.id).single();
         return { user: session.user, perfil };
@@ -24,14 +24,14 @@ async function verificarSesion() {
 async function logout() {
     localStorage.clear();
     sessionStorage.clear();
-    await supabase.auth.signOut();
+    await window.db.auth.signOut();
     window.location.href = 'index.html';
 }
 
 async function obtenerRolActual() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await window.db.auth.getSession();
     if (!session) return null;
-    const { data: perfil } = await supabase
+    const { data: perfil } = await window.db
         .from('perfiles').select('rol').eq('id', session.user.id).single();
     return perfil?.rol || null;
 }
@@ -85,13 +85,13 @@ async function cargarEstadisticasDashboard() {
         { count: otsPendientes },
         { count: otsProgreso },
     ] = await Promise.all([
-        supabase.from('equipos').select('*', { count: 'exact', head: true }).eq('activo', true),
-        supabase.from('equipos').select('*', { count: 'exact', head: true }).eq('criticidad', 'A'),
-        supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'Pendiente'),
-        supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'En Progreso'),
+        window.db.from('equipos').select('*', { count: 'exact', head: true }).eq('activo', true),
+        window.db.from('equipos').select('*', { count: 'exact', head: true }).eq('criticidad', 'A'),
+        window.db.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'Pendiente'),
+        window.db.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'En Progreso'),
     ]);
     const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
-    const { count: otsCompletadas } = await supabase
+    const { count: otsCompletadas } = await window.db
         .from('ordenes_trabajo').select('*', { count: 'exact', head: true })
         .eq('estado', 'Completada').gte('created_at', inicioMes.toISOString());
 
@@ -100,7 +100,7 @@ async function cargarEstadisticasDashboard() {
 
 // ========== EQUIPOS ==========
 async function cargarEquipos(filtros = {}) {
-    let q = supabase.from('equipos').select('*').order('numero', { ascending: true });
+    let q = window.db.from('equipos').select('*').order('numero', { ascending: true });
     if (filtros.criticidad) q = q.eq('criticidad', filtros.criticidad);
     if (filtros.activo !== undefined) q = q.eq('activo', filtros.activo);
     const { data, error } = await q;
@@ -110,7 +110,7 @@ async function cargarEquipos(filtros = {}) {
 
 // ========== ÓRDENES DE TRABAJO ==========
 async function cargarOTs(filtros = {}) {
-    let q = supabase.from('ordenes_trabajo')
+    let q = window.db.from('ordenes_trabajo')
         .select('*, equipos(nombre, codigo_completo)')
         .order('id', { ascending: false });
     if (filtros.estado) q = q.eq('estado', filtros.estado);
@@ -121,30 +121,30 @@ async function cargarOTs(filtros = {}) {
 }
 
 async function crearOT(otData) {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await window.db.auth.getSession();
     if (!session) throw new Error('No hay sesión activa');
-    const { error } = await supabase.from('ordenes_trabajo')
+    const { error } = await window.db.from('ordenes_trabajo')
         .insert([{ ...otData, solicitado_por: session.user.id }]);
     if (error) throw error;
     return true;
 }
 
 async function actualizarOT(id, data) {
-    const { error } = await supabase.from('ordenes_trabajo').update(data).eq('id', id);
+    const { error } = await window.db.from('ordenes_trabajo').update(data).eq('id', id);
     if (error) throw error;
     return true;
 }
 
 async function eliminarOT(id) {
-    await supabase.from('actividades_ot').delete().eq('orden_trabajo_id', id);
-    const { error } = await supabase.from('ordenes_trabajo').delete().eq('id', id);
+    await window.db.from('actividades_ot').delete().eq('orden_trabajo_id', id);
+    const { error } = await window.db.from('ordenes_trabajo').delete().eq('id', id);
     if (error) throw error;
     return true;
 }
 
 // ========== ACTIVIDADES ==========
 async function cargarActividades(filtros = {}) {
-    let q = supabase.from('actividades_ot')
+    let q = window.db.from('actividades_ot')
         .select('*, ordenes_trabajo(numero_ot, titulo)')
         .order('id', { ascending: false });
     if (filtros.orden_trabajo_id) q = q.eq('orden_trabajo_id', filtros.orden_trabajo_id);
@@ -154,26 +154,26 @@ async function cargarActividades(filtros = {}) {
 }
 
 async function crearActividad(actData) {
-    const { error } = await supabase.from('actividades_ot').insert([actData]);
+    const { error } = await window.db.from('actividades_ot').insert([actData]);
     if (error) throw error;
     return true;
 }
 
 async function actualizarActividad(id, data) {
-    const { error } = await supabase.from('actividades_ot').update(data).eq('id', id);
+    const { error } = await window.db.from('actividades_ot').update(data).eq('id', id);
     if (error) throw error;
     return true;
 }
 
 async function eliminarActividad(id) {
-    const { error } = await supabase.from('actividades_ot').delete().eq('id', id);
+    const { error } = await window.db.from('actividades_ot').delete().eq('id', id);
     if (error) throw error;
     return true;
 }
 
 // ========== USUARIOS (solo admin) ==========
 async function cargarUsuarios() {
-    const { data, error } = await supabase.from('perfiles')
+    const { data, error } = await window.db.from('perfiles')
         .select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
@@ -181,18 +181,18 @@ async function cargarUsuarios() {
 
 async function crearUsuario(email, password, nombre, rol, telefono = '') {
     if (!password || password.length < 6) throw new Error('Contraseña mínimo 6 caracteres');
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await window.db.auth.signUp({
         email, password, options: { data: { nombre, rol } }
     });
     if (authError) throw authError;
-    const { error: perfilError } = await supabase.from('perfiles')
+    const { error: perfilError } = await window.db.from('perfiles')
         .insert({ id: authData.user.id, email, nombre, rol, telefono, activo: true });
     if (perfilError) throw perfilError;
     return true;
 }
 
 async function actualizarUsuario(id, data) {
-    const { error } = await supabase.from('perfiles').update(data).eq('id', id);
+    const { error } = await window.db.from('perfiles').update(data).eq('id', id);
     if (error) throw error;
     return true;
 }
@@ -282,7 +282,7 @@ function badgeCriticidad(c) {
 
 // ========== EXPONER GLOBALES ==========
 Object.assign(window, {
-    supabase, verificarSesion, logout, obtenerRolActual,
+    verificarSesion, logout, obtenerRolActual,
     openModal, closeModal, cargarHeader,
     cargarEstadisticasDashboard,
     cargarEquipos, cargarOTs, crearOT, actualizarOT, eliminarOT,
