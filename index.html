@@ -5,54 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Industrial MS - Login</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="styles.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
-            background: #0a0a0a;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: repeating-linear-gradient(45deg, rgba(255,59,48,0.03) 0px, rgba(255,59,48,0.03) 2px, transparent 2px, transparent 8px);
-            pointer-events: none;
-        }
-        .login-container { position: relative; z-index: 1; width: 100%; max-width: 480px; padding: 20px; }
-        .login-card { background: #1a1a1a; border-radius: 24px; padding: 40px; border: 1px solid #2a2a2a; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-        .login-logo { text-align: center; margin-bottom: 32px; }
-        .login-icon { width: 70px; height: 70px; background: linear-gradient(135deg, #ff3b30, #c0392b); border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 20px; }
-        .login-card h1 { font-size: 26px; font-weight: 600; text-align: center; color: #fff; }
-        .login-subtitle { color: #888; text-align: center; font-size: 13px; margin-bottom: 32px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; color: #b0b0b0; font-size: 12px; text-transform: uppercase; }
-        .form-group input { width: 100%; padding: 14px 16px; background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 12px; font-size: 14px; color: #fff; }
-        .form-group input:focus { outline: none; border-color: #ff3b30; }
         .password-wrapper { position: relative; display: flex; align-items: center; }
         .password-wrapper input { width: 100%; padding-right: 50px; }
         .toggle-password { position: absolute; right: 16px; background: none; border: none; color: #666; cursor: pointer; font-size: 18px; }
-        .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #ff3b30, #c0392b); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-        .btn:hover { transform: translateY(-2px); }
-        .btn-secondary { background: #2a2a2a; }
-        .status-card { background: #0d0d0d; border-radius: 12px; padding: 12px 16px; margin-bottom: 24px; border-left: 3px solid #ff3b30; }
-        .status-title { font-size: 11px; color: #888; margin-bottom: 4px; }
-        .status-text { font-size: 13px; color: #fff; }
-        .error-message, .success-message { padding: 12px 16px; border-radius: 12px; font-size: 13px; margin-bottom: 20px; display: none; }
-        .error-message { background: rgba(255,59,48,0.1); border: 1px solid rgba(255,59,48,0.3); color: #ff6b6b; }
-        .success-message { background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); color: #4caf50; }
         .test-credentials { margin-top: 24px; padding: 16px; background: #0d0d0d; border-radius: 12px; text-align: center; font-size: 12px; color: #666; }
         .test-credentials span { color: #ff3b30; font-weight: 600; }
-        .console-hint { margin-top: 16px; padding: 12px; background: #0d0d0d; border-radius: 10px; font-family: monospace; font-size: 11px; text-align: center; color: #888; }
-        .console-hint code { color: #ff3b30; }
+        .clear-btn { background: #6c757d; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -74,141 +34,114 @@
 
             <div class="form-group">
                 <label>USUARIO</label>
-                <input type="email" id="loginEmail" value="admin@demo.com">
+                <input type="email" id="loginEmail" placeholder="admin@industrial.com">
             </div>
 
             <div class="form-group">
                 <label>CONTRASEÑA</label>
                 <div class="password-wrapper">
-                    <input type="password" id="loginPassword" value="Admin123456">
+                    <input type="password" id="loginPassword" placeholder="••••••••">
                     <button type="button" class="toggle-password" id="togglePassword">👁️</button>
                 </div>
             </div>
 
             <button class="btn" id="loginBtn">ACCEDER AL SISTEMA</button>
             <button class="btn btn-secondary" id="forceBtn">🔌 FORZAR CONEXIÓN</button>
+            <button class="btn clear-btn" id="clearBtn">🗑️ LIMPIAR SESIÓN</button>
 
             <div class="test-credentials">
-                🔑 <strong>Acceso de prueba</strong><br>
-                📧 <span>admin@demo.com</span> &nbsp;|&nbsp; 🔒 <span>Admin123456</span>
-            </div>
-
-            <div class="console-hint">
-                💡 <strong>Comandos para consola (F12):</strong><br>
-                <code>testConnection()</code> - Probar conexión<br>
-                <code>testLogin()</code> - Login automático
+                🔑 <strong>Usuarios de prueba</strong><br>
+                👑 admin@industrial.com / Admin123456<br>
+                📋 supervisor@industrial.com / Supervisor123<br>
+                🔧 tecnico@industrial.com / Tecnico123<br>
+                ⚙️ operador@industrial.com / Operador123
             </div>
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script>
-        // =====================================================
-        // CONFIGURACIÓN DIRECTA
-        // =====================================================
-        const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
-        
-        let _supabase = null;
-        
-        function initSupabase() {
-            if (typeof window.supabase === 'undefined') {
-                console.error('❌ Supabase library not loaded');
-                return false;
-            }
-            _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('✅ Supabase initialized');
-            return true;
-        }
-        
-        // Función para probar conexión
-        window.testConnection = async function() {
-            const statusDiv = document.getElementById('connectionStatus');
-            statusDiv.innerHTML = '🔄 Probando conexión...';
-            statusDiv.style.color = '#ffc107';
-            
-            if (!_supabase) initSupabase();
-            
+        const loginBtn = document.getElementById('loginBtn');
+        const forceBtn = document.getElementById('forceBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const emailInput = document.getElementById('loginEmail');
+        const passwordInput = document.getElementById('loginPassword');
+        const errorDiv = document.getElementById('errorMessage');
+        const successDiv = document.getElementById('successMessage');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const togglePassword = document.getElementById('togglePassword');
+
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
+            togglePassword.textContent = type === 'password' ? '👁️' : '🙈';
+        });
+
+        async function testConnection() {
+            connectionStatus.innerHTML = '🔄 Probando conexión...';
             try {
-                const { error } = await _supabase.from('perfiles').select('count', { count: 'exact', head: true });
+                const { error } = await supabase.from('perfiles').select('count', { count: 'exact', head: true });
                 if (error) throw error;
-                statusDiv.innerHTML = '✅ CONECTADO | Supabase Online';
-                statusDiv.style.color = '#4caf50';
-                console.log('✅ Conexión exitosa');
+                connectionStatus.innerHTML = '✅ CONECTADO | Supabase Online';
+                connectionStatus.style.color = '#4caf50';
                 return true;
             } catch (error) {
-                statusDiv.innerHTML = `⚠️ ERROR: ${error.message.substring(0, 40)}`;
-                statusDiv.style.color = '#ff3b30';
-                console.error('❌ Error:', error);
+                connectionStatus.innerHTML = '⚠️ ERROR DE CONEXIÓN';
+                connectionStatus.style.color = '#ff3b30';
                 return false;
             }
-        };
-        
-        // Función de login
-        window.testLogin = async function() {
-            const errorDiv = document.getElementById('errorMessage');
-            const successDiv = document.getElementById('successMessage');
+        }
+
+        async function clearSession() {
+            connectionStatus.innerHTML = '🔄 Limpiando sesión...';
+            localStorage.clear();
+            sessionStorage.clear();
+            await supabase.auth.signOut();
+            connectionStatus.innerHTML = '✅ Sesión limpiada. Recargando...';
+            setTimeout(() => window.location.reload(), 1000);
+        }
+
+        async function doLogin(email, password) {
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
             
-            if (!_supabase) initSupabase();
-            if (!_supabase) {
-                errorDiv.textContent = '❌ Error de conexión';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
             try {
-                const { data, error } = await _supabase.auth.signInWithPassword({
-                    email: 'admin@demo.com',
-                    password: 'Admin123456'
-                });
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
                 
-                successDiv.textContent = '✅ Login exitoso. Redirigiendo...';
+                const { data: perfil } = await supabase.from('perfiles').select('nombre, rol').eq('id', data.user.id).single();
+                if (!perfil) throw new Error('Perfil no encontrado');
+                
+                successDiv.textContent = `✅ Bienvenido ${perfil.nombre}. Redirigiendo...`;
                 successDiv.style.display = 'block';
-                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
             } catch (err) {
-                errorDiv.textContent = '❌ ' + err.message;
+                errorDiv.textContent = `❌ ${err.message === 'Invalid login credentials' ? 'Credenciales incorrectas' : err.message}`;
                 errorDiv.style.display = 'block';
             }
-        };
-        
-        // Login desde formulario
-        document.getElementById('loginBtn').onclick = function() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
+        }
+
+        loginBtn.onclick = () => {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
             if (!email || !password) {
-                document.getElementById('errorMessage').textContent = '❌ Complete todos los campos';
-                document.getElementById('errorMessage').style.display = 'block';
+                errorDiv.textContent = '❌ Complete todos los campos';
+                errorDiv.style.display = 'block';
                 return;
             }
-            window.testLogin();
+            doLogin(email, password);
         };
+        forceBtn.onclick = testConnection;
+        clearBtn.onclick = clearSession;
         
-        // Forzar conexión
-        document.getElementById('forceBtn').onclick = function() {
-            window.testConnection();
-        };
+        emailInput.value = 'admin@industrial.com';
+        passwordInput.value = 'Admin123456';
         
-        // Mostrar/ocultar contraseña
-        document.getElementById('togglePassword').onclick = function() {
-            const input = document.getElementById('loginPassword');
-            const type = input.type === 'password' ? 'text' : 'password';
-            input.type = type;
-            this.textContent = type === 'password' ? '👁️' : '🙈';
-        };
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) window.location.href = 'dashboard.html';
+        });
         
-        // Inicializar y probar conexión
-        initSupabase();
-        setTimeout(() => {
-            window.testConnection();
-            // Verificar sesión existente
-            if (_supabase) {
-                _supabase.auth.getSession().then(({ data: { session } }) => {
-                    if (session) window.location.href = 'dashboard.html';
-                });
-            }
-        }, 500);
+        testConnection();
     </script>
 </body>
 </html>
