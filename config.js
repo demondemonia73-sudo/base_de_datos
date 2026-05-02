@@ -1,5 +1,5 @@
 // =====================================================
-// INDUSTRIAL MS - CONFIGURACIÓN
+// CONFIGURACIÓN GLOBAL
 // =====================================================
 
 const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
@@ -11,5 +11,5 @@ if (typeof window._supabase === 'undefined') {
     console.log('✅ Supabase inicializado');
 }
 
-// Exportar para uso global
+// Variable global para usar en todos los archivos
 const supabase = window._supabase;
