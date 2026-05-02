@@ -5,12 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Industrial MS - Login</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
             background: #0a0a0a;
@@ -31,171 +28,31 @@
             background: repeating-linear-gradient(45deg, rgba(255,59,48,0.03) 0px, rgba(255,59,48,0.03) 2px, transparent 2px, transparent 8px);
             pointer-events: none;
         }
-        .login-container {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            max-width: 480px;
-            padding: 20px;
-        }
-        .login-card {
-            background: #1a1a1a;
-            border-radius: 24px;
-            padding: 40px;
-            border: 1px solid #2a2a2a;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-            transition: all 0.3s ease;
-        }
-        .login-card:hover {
-            border-color: #ff3b30;
-            box-shadow: 0 0 30px rgba(255,59,48,0.1);
-        }
-        .login-logo {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-        .login-icon {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, #ff3b30, #c0392b);
-            border-radius: 20px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
-            margin-bottom: 20px;
-            box-shadow: 0 0 20px rgba(255,59,48,0.3);
-        }
-        .login-card h1 {
-            font-size: 26px;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-            color: #fff;
-        }
-        .login-subtitle {
-            color: #888;
-            text-align: center;
-            font-size: 13px;
-            margin-bottom: 32px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #b0b0b0;
-            font-weight: 500;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 14px 16px;
-            background: #0d0d0d;
-            border: 1px solid #2a2a2a;
-            border-radius: 12px;
-            font-size: 14px;
-            color: #fff;
-            transition: all 0.2s ease;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: #ff3b30;
-            background: #121212;
-        }
-        .password-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        .password-wrapper input {
-            width: 100%;
-            padding-right: 50px;
-        }
-        .toggle-password {
-            position: absolute;
-            right: 16px;
-            background: none;
-            border: none;
-            color: #666;
-            cursor: pointer;
-            font-size: 18px;
-        }
-        .btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #ff3b30, #c0392b);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(255,59,48,0.2);
-        }
-        .status-card {
-            background: #0d0d0d;
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-bottom: 24px;
-            border-left: 3px solid #ff3b30;
-        }
-        .status-title {
-            font-size: 11px;
-            color: #888;
-            margin-bottom: 4px;
-            letter-spacing: 1px;
-        }
-        .status-text {
-            font-size: 13px;
-            color: #fff;
-        }
-        .error-message, .success-message {
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 13px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        .error-message {
-            background: rgba(255,59,48,0.1);
-            border: 1px solid rgba(255,59,48,0.3);
-            color: #ff6b6b;
-        }
-        .success-message {
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid rgba(76, 175, 80, 0.3);
-            color: #4caf50;
-        }
-        .loading {
-            text-align: center;
-            margin: 15px 0;
-            color: #ff3b30;
-            display: none;
-        }
-        .test-credentials {
-            margin-top: 24px;
-            padding: 16px;
-            background: #0d0d0d;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-        }
-        .test-credentials span {
-            color: #ff3b30;
-            font-weight: 600;
-        }
+        .login-container { position: relative; z-index: 1; width: 100%; max-width: 480px; padding: 20px; }
+        .login-card { background: #1a1a1a; border-radius: 24px; padding: 40px; border: 1px solid #2a2a2a; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); transition: all 0.3s ease; }
+        .login-card:hover { border-color: #ff3b30; box-shadow: 0 0 30px rgba(255,59,48,0.1); }
+        .login-logo { text-align: center; margin-bottom: 32px; }
+        .login-icon { width: 70px; height: 70px; background: linear-gradient(135deg, #ff3b30, #c0392b); border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(255,59,48,0.3); }
+        .login-card h1 { font-size: 26px; font-weight: 600; text-align: center; margin-bottom: 8px; letter-spacing: 1px; color: #fff; }
+        .login-subtitle { color: #888; text-align: center; font-size: 13px; margin-bottom: 32px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #b0b0b0; font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input { width: 100%; padding: 14px 16px; background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 12px; font-size: 14px; color: #fff; transition: all 0.2s ease; }
+        .form-group input:focus { outline: none; border-color: #ff3b30; background: #121212; }
+        .password-wrapper { position: relative; display: flex; align-items: center; }
+        .password-wrapper input { width: 100%; padding-right: 50px; }
+        .toggle-password { position: absolute; right: 16px; background: none; border: none; color: #666; cursor: pointer; font-size: 18px; }
+        .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #ff3b30, #c0392b); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 1px; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(255,59,48,0.2); }
+        .status-card { background: #0d0d0d; border-radius: 12px; padding: 12px 16px; margin-bottom: 24px; border-left: 3px solid #ff3b30; }
+        .status-title { font-size: 11px; color: #888; margin-bottom: 4px; letter-spacing: 1px; }
+        .status-text { font-size: 13px; color: #fff; }
+        .error-message, .success-message { padding: 12px 16px; border-radius: 12px; font-size: 13px; margin-bottom: 20px; display: none; }
+        .error-message { background: rgba(255,59,48,0.1); border: 1px solid rgba(255,59,48,0.3); color: #ff6b6b; }
+        .success-message { background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); color: #4caf50; }
+        .loading { text-align: center; margin: 15px 0; color: #ff3b30; display: none; }
+        .test-credentials { margin-top: 24px; padding: 16px; background: #0d0d0d; border-radius: 12px; text-align: center; font-size: 12px; color: #666; }
+        .test-credentials span { color: #ff3b30; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -239,10 +96,8 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
+        // Usar supabase desde config.js (ya está inicializado)
+
         const loginBtn = document.getElementById('loginBtn');
         const emailInput = document.getElementById('loginEmail');
         const passwordInput = document.getElementById('loginPassword');
@@ -299,9 +154,7 @@
 
             } catch (err) {
                 let msg = err.message;
-                if (msg === 'Invalid login credentials') {
-                    msg = 'Email o contraseña incorrectos';
-                }
+                if (msg === 'Invalid login credentials') msg = 'Email o contraseña incorrectos';
                 errorDiv.textContent = `❌ ${msg}`;
                 errorDiv.style.display = 'block';
                 loadingDiv.style.display = 'none';
