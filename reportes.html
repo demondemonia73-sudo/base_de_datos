@@ -99,7 +99,7 @@
             const { data } = await window.db.from('equipos')
                 .select('numero, nombre, codigo_completo, centro_costo, criticidad');
             const body = (data || []).map(e => [e.numero ?? '—', e.nombre, e.codigo_completo, e.centro_costo || '—', e.criticidad ?? '—']);
-            await exportarPDF(['N°', 'Equipo', 'Código', 'Centro de Costo', 'Criticidad'], body, 'equipos');
+            await exportarPDF(['N°', 'Equipo', 'Código', 'Centro de Costo', 'Criticidad'], body, 'equipos', 'REPORTE DE EQUIPOS');
         } catch (err) { mostrarToast('Error: ' + err.message, 'error'); }
     }
 
@@ -119,7 +119,7 @@
                 ot.numero_ot, ot.titulo, ot.prioridad, ot.estado,
                 new Date(ot.created_at).toLocaleDateString('es-ES')
             ]);
-            await exportarPDF(['N° OT', 'Título', 'Prioridad', 'Estado', 'Fecha'], body, 'ordenes_trabajo');
+            await exportarPDF(['N° OT', 'Título', 'Prioridad', 'Estado', 'Fecha'], body, 'ordenes_trabajo', 'REPORTE DE ÓRDENES DE TRABAJO');
         } catch (err) { mostrarToast('Error: ' + err.message, 'error'); }
     }
 
