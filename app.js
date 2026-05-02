@@ -171,29 +171,103 @@ async function eliminarActividad(id) {
     return true;
 }
 
+// ========== LOGIN POR NOMBRE O EMAIL ==========
+async function loginConNombreOEmail(input, password) {
+    let email = input.trim();
+
+    // Si no tiene @ es un nombre de usuario — buscar el email en perfiles
+    if (!email.includes('@')) {
+        const { data: perfil, error } = await window.db
+            .from('perfiles')
+            .select('email')
+            .ilike('nombre', input.trim())
+            .eq('activo', true)
+            .single();
+        if (error || !perfil) throw new Error('Usuario no encontrado. Verifique el nombre o use su email.');
+        email = perfil.email;
+    }
+
+    const { data, error } = await window.db.auth.signInWithPassword({ email, password });
+    if (error) {
+        if (error.message === 'Invalid login credentials') throw new Error('Credenciales incorrectas.');
+        if (error.message.includes('Email not confirmed')) throw new Error('Email no confirmado. Contacte al administrador.');
+        throw error;
+    }
+
+    const { data: perfil } = await window.db
+        .from('perfiles').select('nombre, rol').eq('id', data.user.id).single();
+    if (!perfil) throw new Error('Perfil no encontrado. Contacte al administrador.');
+
+    return { user: data.user, perfil };
+}
+
 // ========== USUARIOS (solo admin) ==========
 async function cargarUsuarios() {
-    const { data, error } = await window.db.from('perfiles')
-        .select('*').order('created_at', { ascending: false });
+    // Traer perfiles junto con su credencial visible si existe
+    const { data, error } = await window.db
+        .from('perfiles')
+        .select('*, credenciales_admin(password_visible, updated_at)')
+        .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
 }
 
 async function crearUsuario(email, password, nombre, rol, telefono = '') {
     if (!password || password.length < 6) throw new Error('Contraseña mínimo 6 caracteres');
+
+    // 1. Crear en Authentication
     const { data: authData, error: authError } = await window.db.auth.signUp({
         email, password, options: { data: { nombre, rol } }
     });
     if (authError) throw authError;
+
+    const userId = authData.user.id;
+
+    // 2. Crear perfil
     const { error: perfilError } = await window.db.from('perfiles')
-        .insert({ id: authData.user.id, email, nombre, rol, telefono, activo: true });
+        .insert({ id: userId, email, nombre, rol, telefono: telefono || null, activo: true });
     if (perfilError) throw perfilError;
-    return true;
+
+    // 3. Guardar contraseña visible para el admin
+    const { error: credError } = await window.db.from('credenciales_admin')
+        .insert({ usuario_id: userId, email, password_visible: password });
+    if (credError) console.warn('No se pudo guardar credencial visible:', credError.message);
+
+    return { userId, email, nombre, password };
 }
 
 async function actualizarUsuario(id, data) {
     const { error } = await window.db.from('perfiles').update(data).eq('id', id);
     if (error) throw error;
+    return true;
+}
+
+// ========== CAMBIAR CONTRASEÑA (via Edge Function) ==========
+const EDGE_URL = 'https://inghjpgqahmceplasunr.supabase.co/functions/v1/admin-update-password';
+
+async function cambiarPasswordAdmin(userId, newPassword) {
+    if (!newPassword || newPassword.length < 6) throw new Error('Contraseña mínimo 6 caracteres');
+
+    // 1. Llamar Edge Function para cambiar en Authentication
+    const { data: { session } } = await window.db.auth.getSession();
+    const res = await fetch(EDGE_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ userId, newPassword }),
+    });
+
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Error al cambiar contraseña');
+
+    // 2. Actualizar contraseña visible en credenciales_admin
+    const { error } = await window.db.from('credenciales_admin')
+        .update({ password_visible: newPassword, updated_at: new Date().toISOString() })
+        .eq('usuario_id', userId);
+    if (error) console.warn('No se actualizó credencial visible:', error.message);
+
     return true;
 }
 
@@ -283,11 +357,12 @@ function badgeCriticidad(c) {
 // ========== EXPONER GLOBALES ==========
 Object.assign(window, {
     verificarSesion, logout, obtenerRolActual,
+    loginConNombreOEmail,
     openModal, closeModal, cargarHeader,
     cargarEstadisticasDashboard,
     cargarEquipos, cargarOTs, crearOT, actualizarOT, eliminarOT,
     cargarActividades, crearActividad, actualizarActividad, eliminarActividad,
-    cargarUsuarios, crearUsuario, actualizarUsuario,
+    cargarUsuarios, crearUsuario, actualizarUsuario, cambiarPasswordAdmin,
     exportarExcel, exportarPDF,
     mostrarToast, formatFecha, formatFechaHora,
     badgeEstado, badgePrioridad, badgeCriticidad,
