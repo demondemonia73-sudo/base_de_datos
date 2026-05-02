@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial MS - Dashboard</title>
+    <title>Industrial MS — Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="styles.css">
@@ -11,109 +11,234 @@
     <script src="app.js"></script>
 </head>
 <body>
-    <div class="header">
-        <div class="logo-area"><div class="logo-icon">🔧</div><div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div></div>
-        <div class="nav-menu">
-            <button class="nav-btn active" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
-            <button class="nav-btn" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
-            <button class="nav-btn" onclick="location.href='ordenes.html'">📋 OT</button>
-            <button class="nav-btn" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
-            <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
-            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
-            <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
+
+<!-- HEADER -->
+<header class="header">
+    <div class="logo-area">
+        <div class="logo-icon">🔧</div>
+        <div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div>
+    </div>
+    <nav class="nav-menu">
+        <button class="nav-btn active" id="nav-dashboard" onclick="location.href='dashboard.html'">📊 Dashboard</button>
+        <button class="nav-btn" id="nav-equipos"   onclick="location.href='equipos.html'">🔌 Equipos</button>
+        <button class="nav-btn" id="nav-ordenes"   onclick="location.href='ordenes.html'">📋 Órdenes</button>
+        <button class="nav-btn" id="nav-actividades" onclick="location.href='actividades.html'">⏱ Actividades</button>
+        <button class="nav-btn" id="nav-reportes"  onclick="location.href='reportes.html'">📈 Reportes</button>
+        <button class="nav-btn" id="navUsuarios"   onclick="location.href='usuarios.html'" style="display:none;">👥 Usuarios</button>
+        <button class="nav-btn logout-btn" id="logoutBtn">🚪 Salir</button>
+    </nav>
+    <div class="user-info">
+        <div class="user-avatar">👤</div>
+        <div><div class="user-name" id="userName">—</div><div class="user-role" id="userRol">—</div></div>
+    </div>
+</header>
+
+<!-- CONTENIDO -->
+<main class="main-content">
+
+    <div class="page-header">
+        <div>
+            <div class="page-title">Dashboard</div>
+            <div class="page-subtitle">Resumen general del sistema de mantenimiento</div>
         </div>
-        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Usuario</div><div class="user-role" id="userRol">ROL</div></div></div>
+        <button class="btn btn-secondary btn-sm" onclick="loadDashboard()">↺ Actualizar</button>
     </div>
 
-    <div class="main-content">
-        <div class="stats-grid">
-            <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-label">TOTAL EQUIPOS</div><div class="stat-value" id="totalEquipos">0</div></div>
-            <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">EQUIPOS CRÍTICOS (A)</div><div class="stat-value" id="equiposCriticos">0</div></div>
-            <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-label">OT PENDIENTES</div><div class="stat-value" id="otsPendientes">0</div></div>
-            <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">OT COMPLETADAS</div><div class="stat-value" id="otsCompletadas">0</div></div>
-        </div>
-
-        <div class="charts-row">
-            <div class="chart-container"><h3>📊 ÓRDENES POR ESTADO</h3><canvas id="estadosChart"></canvas></div>
-            <div class="chart-container"><h3>📊 EQUIPOS POR CRITICIDAD</h3><canvas id="criticidadChart"></canvas></div>
-        </div>
-
-        <div class="card"><div class="card-header"><div class="card-title">📋 ÚLTIMAS ÓRDENES</div><button class="nav-btn" onclick="location.href='ordenes.html'">VER TODAS →</button></div><div id="ultimasOTs"></div></div>
-        <div class="card"><div class="card-header"><div class="card-title">⚠️ EQUIPOS CRÍTICOS</div><button class="nav-btn" onclick="location.href='equipos.html'">VER TODOS →</button></div><div id="equiposCriticosList"></div></div>
-        <div class="card"><div class="card-title">⏱️ ACTIVIDADES RECIENTES</div><div id="actividadesRecientes"></div></div>
+    <!-- STATS -->
+    <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-label">Total Equipos</div><div class="stat-value" id="totalEquipos">—</div></div>
+        <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">Equipos Críticos A</div><div class="stat-value accent" id="equiposCriticos">—</div></div>
+        <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-label">OT Pendientes</div><div class="stat-value" id="otsPendientes">—</div></div>
+        <div class="stat-card"><div class="stat-icon">🔄</div><div class="stat-label">OT En Progreso</div><div class="stat-value" id="otsProgreso">—</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">OT Completadas (mes)</div><div class="stat-value" id="otsCompletadas">—</div></div>
     </div>
 
-    <script>
-        let estadosChart, criticidadChart;
+    <!-- GRÁFICOS -->
+    <div class="charts-row">
+        <div class="chart-container">
+            <div class="chart-title">📊 Órdenes por Estado</div>
+            <canvas id="estadosChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <div class="chart-title">📊 Equipos por Criticidad</div>
+            <canvas id="criticidadChart"></canvas>
+        </div>
+    </div>
 
-        async function init() {
-            const { user, perfil } = await verificarSesion();
-            if (!user) return;
-            
-            document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
-            document.getElementById('userRol').textContent = perfil?.rol?.toUpperCase() || 'ROL';
-            
-            if (perfil?.rol === 'admin') {
-                document.getElementById('navUsuarios').style.display = 'block';
-            }
-            
-            document.getElementById('logoutBtn').onclick = logout;
-            await loadDashboard();
-            setInterval(loadDashboard, 30000);
-        }
+    <!-- ÚLTIMAS OTs -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Últimas Órdenes de Trabajo</div>
+            <button class="btn btn-ghost btn-sm" onclick="location.href='ordenes.html'">Ver todas →</button>
+        </div>
+        <div class="table-wrapper" id="ultimasOTs">
+            <div class="empty-state"><div class="empty-icon">📋</div><p>Cargando...</p></div>
+        </div>
+    </div>
 
-        async function loadDashboard() {
+    <!-- EQUIPOS CRÍTICOS -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Equipos Críticos</div>
+            <button class="btn btn-ghost btn-sm" onclick="location.href='equipos.html'">Ver todos →</button>
+        </div>
+        <div class="table-wrapper" id="equiposCriticosList">
+            <div class="empty-state"><div class="empty-icon">🔌</div><p>Cargando...</p></div>
+        </div>
+    </div>
+
+    <!-- ACTIVIDADES RECIENTES -->
+    <div class="card">
+        <div class="card-title">Actividades Recientes</div>
+        <div class="table-wrapper" id="actividadesRecientes">
+            <div class="empty-state"><div class="empty-icon">⏱</div><p>Cargando...</p></div>
+        </div>
+    </div>
+
+</main>
+
+<script>
+    let _estadosChart, _criticidadChart;
+
+    const chartDefaults = {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#888', font: { size: 11 } } } }
+    };
+
+    async function init() {
+        const result = await cargarHeader('dashboard');
+        if (!result) return;
+        await loadDashboard();
+        setInterval(loadDashboard, 60000);
+    }
+
+    async function loadDashboard() {
+        try {
+            // Stats
             const stats = await cargarEstadisticasDashboard();
-            document.getElementById('totalEquipos').textContent = stats.totalEquipos || 0;
-            document.getElementById('equiposCriticos').textContent = stats.equiposCriticos || 0;
-            document.getElementById('otsPendientes').textContent = stats.otsPendientes || 0;
-            document.getElementById('otsCompletadas').textContent = stats.otsCompletadas || 0;
+            document.getElementById('totalEquipos').textContent    = stats.totalEquipos    ?? '—';
+            document.getElementById('equiposCriticos').textContent = stats.equiposCriticos ?? '—';
+            document.getElementById('otsPendientes').textContent   = stats.otsPendientes   ?? '—';
+            document.getElementById('otsProgreso').textContent     = stats.otsProgreso     ?? '—';
+            document.getElementById('otsCompletadas').textContent  = stats.otsCompletadas  ?? '—';
 
-            // Gráfico estados
-            const { data: estados } = await supabase.from('ordenes_trabajo').select('estado');
+            // Gráfico estados OT
+            const { data: estadosRaw } = await supabase.from('ordenes_trabajo').select('estado');
             const counts = { Pendiente: 0, 'En Progreso': 0, Completada: 0, Cancelada: 0 };
-            estados?.forEach(ot => counts[ot.estado] = (counts[ot.estado] || 0) + 1);
-            if (estadosChart) estadosChart.destroy();
-            estadosChart = new Chart(document.getElementById('estadosChart'), {
+            estadosRaw?.forEach(r => { if (counts[r.estado] !== undefined) counts[r.estado]++; });
+
+            if (_estadosChart) _estadosChart.destroy();
+            _estadosChart = new Chart(document.getElementById('estadosChart'), {
                 type: 'doughnut',
-                data: { labels: ['Pendiente', 'En Progreso', 'Completada', 'Cancelada'], datasets: [{ data: [counts.Pendiente, counts['En Progreso'], counts.Completada, counts.Cancelada], backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#6c757d'] }] },
-                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } }
+                data: {
+                    labels: Object.keys(counts),
+                    datasets: [{
+                        data: Object.values(counts),
+                        backgroundColor: ['#eab308aa', '#3b82f6aa', '#22c55eaa', '#6b7280aa'],
+                        borderColor: ['#eab308', '#3b82f6', '#22c55e', '#6b7280'],
+                        borderWidth: 1,
+                    }]
+                },
+                options: { ...chartDefaults }
             });
 
             // Gráfico criticidad
-            const { data: criticidad } = await supabase.from('equipos').select('criticidad');
+            const { data: critRaw } = await supabase.from('equipos').select('criticidad');
             const crit = { A: 0, B: 0, C: 0 };
-            criticidad?.forEach(e => { if (e.criticidad) crit[e.criticidad]++; });
-            if (criticidadChart) criticidadChart.destroy();
-            criticidadChart = new Chart(document.getElementById('criticidadChart'), {
+            critRaw?.forEach(e => { if (e.criticidad && crit[e.criticidad] !== undefined) crit[e.criticidad]++; });
+
+            if (_criticidadChart) _criticidadChart.destroy();
+            _criticidadChart = new Chart(document.getElementById('criticidadChart'), {
                 type: 'bar',
-                data: { labels: ['Crítico (A)', 'Moderado (B)', 'Bajo (C)'], datasets: [{ label: 'Cantidad', data: [crit.A, crit.B, crit.C], backgroundColor: ['#ff3b30', '#ffc107', '#28a745'] }] },
-                options: { responsive: true, scales: { y: { ticks: { color: '#fff' }, grid: { color: '#2a2a2a' } }, x: { ticks: { color: '#fff' } } } }
+                data: {
+                    labels: ['Crítico (A)', 'Moderado (B)', 'Bajo (C)'],
+                    datasets: [{
+                        label: 'Equipos',
+                        data: [crit.A, crit.B, crit.C],
+                        backgroundColor: ['#e53e3eaa', '#eab308aa', '#22c55eaa'],
+                        borderColor: ['#e53e3e', '#eab308', '#22c55e'],
+                        borderWidth: 1,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        y: { ticks: { color: '#888' }, grid: { color: '#1a1a1a' }, beginAtZero: true },
+                        x: { ticks: { color: '#888' }, grid: { color: '#1a1a1a' } }
+                    }
+                }
             });
 
-            // Últimas OT
-            const { data: ultimasOTs } = await supabase.from('ordenes_trabajo').select('numero_ot, titulo, prioridad, estado, created_at').order('created_at', { ascending: false }).limit(5);
-            let otsHtml = '<table class="data-table"><thead><tr><th>N° OT</th><th>TÍTULO</th><th>PRIORIDAD</th><th>ESTADO</th><th>FECHA</th></tr></thead><tbody>';
-            ultimasOTs?.forEach(ot => otsHtml += `<tr><td><strong>${ot.numero_ot}</strong></td><td>${ot.titulo}</td><td><span class="badge badge-critical">${ot.prioridad}</span></td><td><span class="badge badge-pending">${ot.estado}</span></td><td>${new Date(ot.created_at).toLocaleDateString()}</td></tr>`);
-            otsHtml += '</tbody></table>';
-            document.getElementById('ultimasOTs').innerHTML = otsHtml || '<p>No hay órdenes</p>';
+            // Últimas OTs
+            const { data: ults } = await supabase.from('ordenes_trabajo')
+                .select('numero_ot, titulo, prioridad, estado, created_at')
+                .order('created_at', { ascending: false }).limit(5);
+
+            if (!ults?.length) {
+                document.getElementById('ultimasOTs').innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Sin órdenes registradas</p></div>';
+            } else {
+                let html = '<table class="data-table"><thead><tr><th>N° OT</th><th>Título</th><th>Prioridad</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>';
+                ults.forEach(ot => {
+                    html += `<tr>
+                        <td><code>${ot.numero_ot}</code></td>
+                        <td>${ot.titulo || '—'}</td>
+                        <td>${badgePrioridad(ot.prioridad)}</td>
+                        <td>${badgeEstado(ot.estado)}</td>
+                        <td style="color:var(--text-secondary);font-size:12px;">${formatFecha(ot.created_at)}</td>
+                    </tr>`;
+                });
+                document.getElementById('ultimasOTs').innerHTML = html + '</tbody></table>';
+            }
 
             // Equipos críticos
-            const { data: criticos } = await supabase.from('equipos').select('nombre, codigo_completo').eq('criticidad', 'A').limit(10);
-            let critHtml = '<table class="data-table"><thead><tr><th>EQUIPO</th><th>CÓDIGO</th><th>CRITICIDAD</th></tr></thead><tbody>';
-            criticos?.forEach(e => critHtml += `<tr><td>${e.nombre}</td><td><code>${e.codigo_completo}</code></td><td><span class="badge badge-critical">A - CRÍTICO</span></td></tr>`);
-            critHtml += '</tbody></table>';
-            document.getElementById('equiposCriticosList').innerHTML = critHtml || '<p>Sin equipos críticos</p>';
+            const { data: criticos } = await supabase.from('equipos')
+                .select('nombre, codigo_completo, proceso').eq('criticidad', 'A').limit(8);
+
+            if (!criticos?.length) {
+                document.getElementById('equiposCriticosList').innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><p>Sin equipos críticos</p></div>';
+            } else {
+                let html = '<table class="data-table"><thead><tr><th>Equipo</th><th>Código</th><th>Proceso</th><th>Criticidad</th></tr></thead><tbody>';
+                criticos.forEach(e => {
+                    html += `<tr>
+                        <td><strong>${e.nombre}</strong></td>
+                        <td><code>${e.codigo_completo}</code></td>
+                        <td style="color:var(--text-secondary)">${e.proceso || '—'}</td>
+                        <td>${badgeCriticidad('A')}</td>
+                    </tr>`;
+                });
+                document.getElementById('equiposCriticosList').innerHTML = html + '</tbody></table>';
+            }
 
             // Actividades recientes
-            const { data: actividades } = await supabase.from('actividades_ot').select('descripcion, tecnico, estado, created_at, ordenes_trabajo(numero_ot)').order('created_at', { ascending: false }).limit(5);
-            let actHtml = '<table class="data-table"><thead><tr><th>OT</th><th>ACTIVIDAD</th><th>TÉCNICO</th><th>ESTADO</th><th>FECHA</th></tr></thead><tbody>';
-            actividades?.forEach(a => actHtml += `<tr><td><strong>${a.ordenes_trabajo?.numero_ot || '-'}</strong></td><td>${a.descripcion?.substring(0, 40) || '-'}${a.descripcion?.length > 40 ? '...' : ''}</td><td>${a.tecnico || '-'}</td><td><span class="badge badge-pending">${a.estado || '-'}</span></td><td>${new Date(a.created_at).toLocaleDateString()}</td></tr>`);
-            actHtml += '</tbody></table>';
-            document.getElementById('actividadesRecientes').innerHTML = actHtml || '<p>Sin actividades</p>';
-        }
+            const { data: acts } = await supabase.from('actividades_ot')
+                .select('descripcion, tecnico, estado, created_at, ordenes_trabajo(numero_ot)')
+                .order('created_at', { ascending: false }).limit(5);
 
-        init();
-    </script>
+            if (!acts?.length) {
+                document.getElementById('actividadesRecientes').innerHTML = '<div class="empty-state"><div class="empty-icon">⏱</div><p>Sin actividades registradas</p></div>';
+            } else {
+                let html = '<table class="data-table"><thead><tr><th>OT</th><th>Actividad</th><th>Técnico</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>';
+                acts.forEach(a => {
+                    const desc = (a.descripcion || '—').substring(0, 45) + (a.descripcion?.length > 45 ? '…' : '');
+                    html += `<tr>
+                        <td><code>${a.ordenes_trabajo?.numero_ot || '—'}</code></td>
+                        <td>${desc}</td>
+                        <td>${a.tecnico || '—'}</td>
+                        <td>${badgeEstado(a.estado || 'Pendiente')}</td>
+                        <td style="color:var(--text-secondary);font-size:12px;">${formatFecha(a.created_at)}</td>
+                    </tr>`;
+                });
+                document.getElementById('actividadesRecientes').innerHTML = html + '</tbody></table>';
+            }
+
+        } catch (err) {
+            console.error('Error cargando dashboard:', err);
+            mostrarToast('Error al cargar datos del dashboard', 'error');
+        }
+    }
+
+    init();
+</script>
 </body>
 </html>
