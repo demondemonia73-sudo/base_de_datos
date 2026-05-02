@@ -1,16 +1,24 @@
 // =====================================================
-// FUNCIONES GLOBALES - COMPARTIDAS ENTRE TODOS LOS HTML
+// APP.JS — Funciones globales · Industrial MS
 // =====================================================
+
+// Una sola declaración de supabase en todo el proyecto
+const supabase = window._supabaseClient;
 
 // ========== AUTENTICACIÓN ==========
 async function verificarSesion() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { window.location.href = 'index.html'; return null; }
+        const { data: perfil } = await supabase
+            .from('perfiles').select('nombre, rol, apellido')
+            .eq('id', session.user.id).single();
+        return { user: session.user, perfil };
+    } catch (e) {
+        console.error('Error verificando sesión:', e);
         window.location.href = 'index.html';
         return null;
     }
-    const { data: perfil } = await supabase.from('perfiles').select('nombre, rol').eq('id', session.user.id).single();
-    return { user: session.user, perfil };
 }
 
 async function logout() {
@@ -23,98 +31,125 @@ async function logout() {
 async function obtenerRolActual() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return null;
-    const { data: perfil } = await supabase.from('perfiles').select('rol').eq('id', session.user.id).single();
-    return perfil?.rol;
+    const { data: perfil } = await supabase
+        .from('perfiles').select('rol').eq('id', session.user.id).single();
+    return perfil?.rol || null;
 }
 
 // ========== MODALES ==========
 function openModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.style.display = 'flex';
+    const m = document.getElementById(id);
+    if (m) { m.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
 }
-
 function closeModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.style.display = 'none';
+    const m = document.getElementById(id);
+    if (m) { m.style.display = 'none'; document.body.style.overflow = ''; }
 }
 
-// ========== REPORTES ==========
-async function exportarExcel(data, nombreArchivo, nombreHoja = 'Datos') {
-    const ws = XLSX.utils.json_to_sheet(data || []);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
-    XLSX.writeFile(wb, `${nombreArchivo}_${new Date().toISOString().split('T')[0]}.xlsx`);
-}
+// Cerrar modal al hacer click fuera
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) closeModal(e.target.id);
+});
 
-async function exportarPDF(headers, data, nombreArchivo) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('landscape');
-    doc.autoTable({
-        head: [headers],
-        body: data,
-        theme: 'striped',
-        styles: { fontSize: 8, textColor: [255,255,255] },
-        headStyles: { fillColor: [255,59,48] },
-        alternateRowStyles: { fillColor: [30,30,30] }
-    });
-    doc.save(`${nombreArchivo}_${new Date().toISOString().split('T')[0]}.pdf`);
-}
+// ========== HEADER DINÁMICO ==========
+async function cargarHeader(paginaActiva) {
+    const result = await verificarSesion();
+    if (!result) return null;
+    const { perfil } = result;
 
-// ========== CARGAR HEADER ==========
-async function cargarHeader() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    
-    const { data: perfil } = await supabase.from('perfiles').select('nombre, rol').eq('id', session.user.id).single();
-    if (perfil) {
-        if (document.getElementById('userName')) document.getElementById('userName').textContent = perfil.nombre;
-        if (document.getElementById('userRol')) document.getElementById('userRol').textContent = perfil.rol?.toUpperCase();
-        
-        // Mostrar botón de usuarios SOLO para admin
-        if (perfil.rol === 'admin' && document.getElementById('navUsuarios')) {
-            document.getElementById('navUsuarios').style.display = 'block';
-        }
+    const el = (id) => document.getElementById(id);
+    if (el('userName')) el('userName').textContent = perfil?.nombre || 'Usuario';
+    if (el('userRol'))  el('userRol').textContent  = (perfil?.rol || 'ROL').toUpperCase();
+
+    // Mostrar nav de usuarios solo si es admin
+    if (perfil?.rol === 'admin' && el('navUsuarios')) {
+        el('navUsuarios').style.display = 'inline-flex';
     }
-    
-    if (document.getElementById('logoutBtn')) {
-        document.getElementById('logoutBtn').onclick = logout;
+
+    // Marcar nav activo
+    if (paginaActiva) {
+        const btn = document.getElementById('nav-' + paginaActiva);
+        if (btn) btn.classList.add('active');
     }
+
+    if (el('logoutBtn')) el('logoutBtn').onclick = logout;
+
+    return result;
 }
 
-// ========== DASHBOARD FUNCTIONS ==========
+// ========== ESTADÍSTICAS DASHBOARD ==========
 async function cargarEstadisticasDashboard() {
-    const { count: totalEquipos } = await supabase.from('equipos').select('*', { count: 'exact', head: true });
-    const { count: equiposCriticos } = await supabase.from('equipos').select('*', { count: 'exact', head: true }).eq('criticidad', 'A');
-    const { count: otsPendientes } = await supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'Pendiente');
-    const inicioMes = new Date(); inicioMes.setDate(1);
-    const { count: otsCompletadas } = await supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'Completada').gte('created_at', inicioMes.toISOString());
-    
-    return { totalEquipos, equiposCriticos, otsPendientes, otsCompletadas };
+    const [
+        { count: totalEquipos },
+        { count: equiposCriticos },
+        { count: otsPendientes },
+        { count: otsProgreso },
+    ] = await Promise.all([
+        supabase.from('equipos').select('*', { count: 'exact', head: true }).eq('activo', true),
+        supabase.from('equipos').select('*', { count: 'exact', head: true }).eq('criticidad', 'A'),
+        supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'Pendiente'),
+        supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'En Progreso'),
+    ]);
+    const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+    const { count: otsCompletadas } = await supabase
+        .from('ordenes_trabajo').select('*', { count: 'exact', head: true })
+        .eq('estado', 'Completada').gte('created_at', inicioMes.toISOString());
+
+    return { totalEquipos, equiposCriticos, otsPendientes, otsProgreso, otsCompletadas };
 }
 
-// ========== EQUIPOS FUNCTIONS ==========
-async function cargarEquipos() {
-    const { data } = await supabase.from('equipos').select('*').order('numero', { ascending: true });
+// ========== EQUIPOS ==========
+async function cargarEquipos(filtros = {}) {
+    let q = supabase.from('equipos').select('*').order('numero', { ascending: true });
+    if (filtros.criticidad) q = q.eq('criticidad', filtros.criticidad);
+    if (filtros.activo !== undefined) q = q.eq('activo', filtros.activo);
+    const { data, error } = await q;
+    if (error) throw error;
     return data || [];
 }
 
-// ========== OT FUNCTIONS ==========
-async function cargarOTs() {
-    const { data } = await supabase.from('ordenes_trabajo').select(`*, equipos(nombre)`).order('id', { ascending: false });
+// ========== ÓRDENES DE TRABAJO ==========
+async function cargarOTs(filtros = {}) {
+    let q = supabase.from('ordenes_trabajo')
+        .select('*, equipos(nombre, codigo_completo)')
+        .order('id', { ascending: false });
+    if (filtros.estado) q = q.eq('estado', filtros.estado);
+    if (filtros.prioridad) q = q.eq('prioridad', filtros.prioridad);
+    const { data, error } = await q;
+    if (error) throw error;
     return data || [];
 }
 
 async function crearOT(otData) {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('No hay sesión');
-    const { error } = await supabase.from('ordenes_trabajo').insert([{ ...otData, solicitado_por: session.user.id }]);
+    if (!session) throw new Error('No hay sesión activa');
+    const { error } = await supabase.from('ordenes_trabajo')
+        .insert([{ ...otData, solicitado_por: session.user.id }]);
     if (error) throw error;
     return true;
 }
 
-// ========== ACTIVIDADES FUNCTIONS ==========
-async function cargarActividades() {
-    const { data } = await supabase.from('actividades_ot').select(`*, ordenes_trabajo(numero_ot, titulo)`).order('id', { ascending: false });
+async function actualizarOT(id, data) {
+    const { error } = await supabase.from('ordenes_trabajo').update(data).eq('id', id);
+    if (error) throw error;
+    return true;
+}
+
+async function eliminarOT(id) {
+    await supabase.from('actividades_ot').delete().eq('orden_trabajo_id', id);
+    const { error } = await supabase.from('ordenes_trabajo').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+}
+
+// ========== ACTIVIDADES ==========
+async function cargarActividades(filtros = {}) {
+    let q = supabase.from('actividades_ot')
+        .select('*, ordenes_trabajo(numero_ot, titulo)')
+        .order('id', { ascending: false });
+    if (filtros.orden_trabajo_id) q = q.eq('orden_trabajo_id', filtros.orden_trabajo_id);
+    const { data, error } = await q;
+    if (error) throw error;
     return data || [];
 }
 
@@ -124,22 +159,34 @@ async function crearActividad(actData) {
     return true;
 }
 
-// ========== USUARIOS FUNCTIONS (SOLO ADMIN) ==========
+async function actualizarActividad(id, data) {
+    const { error } = await supabase.from('actividades_ot').update(data).eq('id', id);
+    if (error) throw error;
+    return true;
+}
+
+async function eliminarActividad(id) {
+    const { error } = await supabase.from('actividades_ot').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+}
+
+// ========== USUARIOS (solo admin) ==========
 async function cargarUsuarios() {
-    const { data } = await supabase.from('perfiles').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('perfiles')
+        .select('*').order('created_at', { ascending: false });
+    if (error) throw error;
     return data || [];
 }
 
 async function crearUsuario(email, password, nombre, rol, telefono = '') {
     if (!password || password.length < 6) throw new Error('Contraseña mínimo 6 caracteres');
-    const { data: authData, error: authError } = await supabase.auth.signUp({ 
-        email, password, 
-        options: { data: { nombre, rol } } 
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+        email, password, options: { data: { nombre, rol } }
     });
     if (authError) throw authError;
-    const { error: perfilError } = await supabase.from('perfiles').insert({ 
-        id: authData.user.id, email, nombre, rol, telefono, activo: true 
-    });
+    const { error: perfilError } = await supabase.from('perfiles')
+        .insert({ id: authData.user.id, email, nombre, rol, telefono, activo: true });
     if (perfilError) throw perfilError;
     return true;
 }
@@ -150,24 +197,100 @@ async function actualizarUsuario(id, data) {
     return true;
 }
 
-// ========== EXPORTAR FUNCIONES GLOBALES ==========
-window.supabase = supabase;
-window.verificarSesion = verificarSesion;
-window.logout = logout;
-window.obtenerRolActual = obtenerRolActual;
-window.openModal = openModal;
-window.closeModal = closeModal;
-window.exportarExcel = exportarExcel;
-window.exportarPDF = exportarPDF;
-window.cargarHeader = cargarHeader;
-window.cargarEstadisticasDashboard = cargarEstadisticasDashboard;
-window.cargarEquipos = cargarEquipos;
-window.cargarOTs = cargarOTs;
-window.crearOT = crearOT;
-window.cargarActividades = cargarActividades;
-window.crearActividad = crearActividad;
-window.cargarUsuarios = cargarUsuarios;
-window.crearUsuario = crearUsuario;
-window.actualizarUsuario = actualizarUsuario;
+// ========== EXPORTAR EXCEL ==========
+async function exportarExcel(data, nombreArchivo, nombreHoja = 'Datos') {
+    if (!data || data.length === 0) { mostrarToast('No hay datos para exportar', 'warning'); return; }
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
+    XLSX.writeFile(wb, `${nombreArchivo}_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
 
-console.log('✅ app.js cargado - Funciones globales disponibles');
+// ========== EXPORTAR PDF ==========
+async function exportarPDF(headers, data, nombreArchivo) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape');
+    doc.setFillColor(10, 10, 10);
+    doc.rect(0, 0, 297, 210, 'F');
+    doc.autoTable({
+        head: [headers],
+        body: data,
+        theme: 'striped',
+        styles: { fontSize: 8, textColor: [220, 220, 220], fillColor: [18, 18, 18] },
+        headStyles: { fillColor: [220, 38, 38], textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [26, 26, 26] },
+        margin: { top: 20 },
+    });
+    doc.save(`${nombreArchivo}_${new Date().toISOString().split('T')[0]}.pdf`);
+}
+
+// ========== TOAST NOTIFICATIONS ==========
+function mostrarToast(mensaje, tipo = 'success') {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    const colors = { success: '#16a34a', error: '#dc2626', warning: '#d97706', info: '#2563eb' };
+    const icons  = { success: '✓', error: '✕', warning: '⚠', info: 'i' };
+    toast.style.cssText = `
+        background:#1a1a1a; border:1px solid ${colors[tipo]}; color:#fff;
+        padding:12px 18px; border-radius:10px; font-size:13px;
+        display:flex; align-items:center; gap:10px;
+        box-shadow:0 4px 20px rgba(0,0,0,0.5);
+        animation: slideIn 0.3s ease; min-width:260px;
+    `;
+    toast.innerHTML = `<span style="color:${colors[tipo]};font-weight:700;">${icons[tipo]}</span> ${mensaje}`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3500);
+}
+
+// ========== HELPERS ==========
+function formatFecha(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatFechaHora(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+function badgeEstado(estado) {
+    const map = {
+        'Pendiente':   'badge-pending',
+        'En Progreso': 'badge-progress',
+        'Completada':  'badge-completed',
+        'Cancelada':   'badge-cancelled',
+    };
+    return `<span class="badge ${map[estado] || 'badge-pending'}">${estado}</span>`;
+}
+
+function badgePrioridad(p) {
+    const map = { 'Urgente': 'badge-critical', 'Alta': 'badge-moderate', 'Normal': 'badge-low', 'Baja': 'badge-inactive' };
+    return `<span class="badge ${map[p] || 'badge-low'}">${p}</span>`;
+}
+
+function badgeCriticidad(c) {
+    const map = { 'A': 'badge-critical', 'B': 'badge-moderate', 'C': 'badge-low' };
+    const label = { 'A': 'A · CRÍTICO', 'B': 'B · MODERADO', 'C': 'C · BAJO' };
+    return `<span class="badge ${map[c] || 'badge-low'}">${label[c] || c || '—'}</span>`;
+}
+
+// ========== EXPONER GLOBALES ==========
+Object.assign(window, {
+    supabase, verificarSesion, logout, obtenerRolActual,
+    openModal, closeModal, cargarHeader,
+    cargarEstadisticasDashboard,
+    cargarEquipos, cargarOTs, crearOT, actualizarOT, eliminarOT,
+    cargarActividades, crearActividad, actualizarActividad, eliminarActividad,
+    cargarUsuarios, crearUsuario, actualizarUsuario,
+    exportarExcel, exportarPDF,
+    mostrarToast, formatFecha, formatFechaHora,
+    badgeEstado, badgePrioridad, badgeCriticidad,
+});
+
+console.log('✅ app.js · Industrial MS listo');
