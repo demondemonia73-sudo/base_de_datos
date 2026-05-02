@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial MS - Equipos</title>
+    <title>Industrial MS — Equipos</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,84 +13,141 @@
     <script src="app.js"></script>
 </head>
 <body>
-    <div class="header">
-        <div class="logo-area"><div class="logo-icon">🔧</div><div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div></div>
-        <div class="nav-menu">
-            <button class="nav-btn" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
-            <button class="nav-btn active" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
-            <button class="nav-btn" onclick="location.href='ordenes.html'">📋 OT</button>
-            <button class="nav-btn" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
-            <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
-            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
-            <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
+
+<header class="header">
+    <div class="logo-area">
+        <div class="logo-icon">🔧</div>
+        <div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div>
+    </div>
+    <nav class="nav-menu">
+        <button class="nav-btn" onclick="location.href='dashboard.html'">📊 Dashboard</button>
+        <button class="nav-btn active" id="nav-equipos" onclick="location.href='equipos.html'">🔌 Equipos</button>
+        <button class="nav-btn" onclick="location.href='ordenes.html'">📋 Órdenes</button>
+        <button class="nav-btn" onclick="location.href='actividades.html'">⏱ Actividades</button>
+        <button class="nav-btn" onclick="location.href='reportes.html'">📈 Reportes</button>
+        <button class="nav-btn" id="navUsuarios" onclick="location.href='usuarios.html'" style="display:none;">👥 Usuarios</button>
+        <button class="nav-btn logout-btn" id="logoutBtn">🚪 Salir</button>
+    </nav>
+    <div class="user-info">
+        <div class="user-avatar">👤</div>
+        <div><div class="user-name" id="userName">—</div><div class="user-role" id="userRol">—</div></div>
+    </div>
+</header>
+
+<main class="main-content">
+
+    <div class="page-header">
+        <div>
+            <div class="page-title">Catálogo de Equipos</div>
+            <div class="page-subtitle" id="equiposCount">Cargando...</div>
         </div>
-        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Usuario</div><div class="user-role" id="userRol">ROL</div></div></div>
+        <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary btn-sm" onclick="doExportarExcel()">📊 Excel</button>
+            <button class="btn btn-secondary btn-sm" onclick="doExportarPDF()">📄 PDF</button>
+        </div>
     </div>
 
-    <div class="main-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">📋 CATÁLOGO DE EQUIPOS</div>
-                <div><button class="btn btn-secondary btn-sm" onclick="exportarEquiposExcel()">📊 EXCEL</button><button class="btn btn-secondary btn-sm" onclick="exportarEquiposPDF()" style="margin-left:10px;">📄 PDF</button></div>
-            </div>
-            <div class="filter-bar">
-                <input type="text" id="searchEquipo" placeholder="🔍 Buscar equipo..." onkeyup="filtrarEquipos()">
-                <select id="filterCriticidad" onchange="filtrarEquipos()"><option value="">📊 TODAS</option><option value="A">🔴 CRÍTICO (A)</option><option value="B">🟡 MODERADO (B)</option><option value="C">🟢 BAJO (C)</option></select>
-            </div>
-            <div id="equiposTable"></div>
+    <div class="card">
+        <div class="filter-bar">
+            <input type="text" id="searchEquipo" placeholder="🔍 Buscar por nombre o código..." oninput="filtrar()">
+            <select id="filterCrit" onchange="filtrar()">
+                <option value="">Todas las criticidades</option>
+                <option value="A">🔴 Crítico (A)</option>
+                <option value="B">🟡 Moderado (B)</option>
+                <option value="C">🟢 Bajo (C)</option>
+            </select>
+            <select id="filterCentro" onchange="filtrar()">
+                <option value="">Todos los centros</option>
+            </select>
+        </div>
+        <div class="table-wrapper" id="equiposTable">
+            <div class="empty-state"><div class="empty-icon">🔌</div><p>Cargando equipos...</p></div>
         </div>
     </div>
 
-    <script>
-        let equiposData = [];
+</main>
 
-        async function init() {
-            const { user, perfil } = await verificarSesion();
-            if (!user) return;
-            document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
-            document.getElementById('userRol').textContent = perfil?.rol?.toUpperCase() || 'ROL';
-            if (perfil?.rol === 'admin') document.getElementById('navUsuarios').style.display = 'block';
-            document.getElementById('logoutBtn').onclick = logout;
-            await cargarEquipos();
+<script>
+    let _equipos = [];
+
+    async function init() {
+        await cargarHeader('equipos');
+        await loadEquipos();
+    }
+
+    async function loadEquipos() {
+        try {
+            // Nombre diferente a la función global para evitar conflicto
+            _equipos = await cargarEquipos();
+            document.getElementById('equiposCount').textContent = `${_equipos.length} equipos registrados`;
+
+            // Poblar filtro de centros
+            const centros = [...new Set(_equipos.map(e => e.centro_costo).filter(Boolean))].sort();
+            const sel = document.getElementById('filterCentro');
+            centros.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
+
+            renderizar(_equipos);
+        } catch (err) {
+            mostrarToast('Error al cargar equipos: ' + err.message, 'error');
+        }
+    }
+
+    function renderizar(lista) {
+        if (!lista.length) {
+            document.getElementById('equiposTable').innerHTML =
+                '<div class="empty-state"><div class="empty-icon">🔍</div><p>No se encontraron equipos con ese filtro</p></div>';
+            return;
         }
 
-        async function cargarEquipos() {
-            const data = await window.cargarEquipos();
-            equiposData = data;
-            renderizarEquipos(equiposData);
-        }
+        let html = `<table class="data-table">
+            <thead><tr>
+                <th>N°</th><th>Nombre</th><th>Código</th>
+                <th>Centro de Costo</th><th>Proceso</th><th>Criticidad</th>
+            </tr></thead><tbody>`;
 
-        function renderizarEquipos(equipos) {
-            let html = '<table class="data-table"><thead><tr><th>N°</th><th>NOMBRE</th><th>CÓDIGO</th><th>PROCESO</th><th>CRITICIDAD</th></tr></thead><tbody>';
-            equipos.forEach(e => {
-                let badgeClass = e.criticidad === 'A' ? 'badge-critical' : (e.criticidad === 'B' ? 'badge-moderate' : 'badge-low');
-                html += `<tr><td>${e.numero || '-'}</td><td><strong>${e.nombre || '-'}</strong></td><td><code>${e.codigo_completo || '-'}</code></td><td>${e.proceso || '-'}</td><td><span class="badge ${badgeClass}">${e.criticidad || '-'}</span></td></tr>`;
-            });
-            html += '</tbody></table>';
-            document.getElementById('equiposTable').innerHTML = html || '<p>No hay equipos</p>';
-        }
+        lista.forEach(e => {
+            html += `<tr>
+                <td style="color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">${e.numero ?? '—'}</td>
+                <td><strong>${e.nombre || '—'}</strong></td>
+                <td><code>${e.codigo_completo || '—'}</code></td>
+                <td style="color:var(--text-secondary)">${e.centro_costo || '—'}</td>
+                <td style="color:var(--text-secondary)">${e.proceso || '—'}</td>
+                <td>${badgeCriticidad(e.criticidad)}</td>
+            </tr>`;
+        });
 
-        function filtrarEquipos() {
-            let filtered = equiposData;
-            const search = document.getElementById('searchEquipo').value.toLowerCase();
-            if (search) filtered = filtered.filter(e => e.nombre?.toLowerCase().includes(search) || e.codigo_completo?.toLowerCase().includes(search));
-            const criticidad = document.getElementById('filterCriticidad').value;
-            if (criticidad) filtered = filtered.filter(e => e.criticidad === criticidad);
-            renderizarEquipos(filtered);
-        }
+        document.getElementById('equiposTable').innerHTML = html + '</tbody></table>';
+    }
 
-        async function exportarEquiposExcel() {
-            const { data } = await supabase.from('equipos').select('*');
-            exportarExcel(data, 'equipos', 'Equipos');
-        }
+    function filtrar() {
+        const q    = document.getElementById('searchEquipo').value.toLowerCase();
+        const crit = document.getElementById('filterCrit').value;
+        const cc   = document.getElementById('filterCentro').value;
 
-        async function exportarEquiposPDF() {
+        let r = _equipos;
+        if (q)    r = r.filter(e => e.nombre?.toLowerCase().includes(q) || e.codigo_completo?.toLowerCase().includes(q));
+        if (crit) r = r.filter(e => e.criticidad === crit);
+        if (cc)   r = r.filter(e => e.centro_costo === cc);
+
+        renderizar(r);
+    }
+
+    async function doExportarExcel() {
+        try {
+            const { data } = await supabase.from('equipos').select('numero, nombre, codigo_completo, centro_costo, proceso, criticidad, puntaje_criticidad, activo');
+            await exportarExcel(data, 'equipos', 'Equipos');
+        } catch (err) { mostrarToast('Error exportando: ' + err.message, 'error'); }
+    }
+
+    async function doExportarPDF() {
+        try {
             const { data } = await supabase.from('equipos').select('numero, nombre, codigo_completo, criticidad');
-            const body = (data || []).map(e => [e.numero, e.nombre, e.codigo_completo, e.criticidad]);
-            exportarPDF(['N°', 'EQUIPO', 'CÓDIGO', 'CRITICIDAD'], body, 'equipos');
-        }
+            const body = (data || []).map(e => [e.numero ?? '—', e.nombre, e.codigo_completo, e.criticidad ?? '—']);
+            await exportarPDF(['N°', 'Equipo', 'Código', 'Criticidad'], body, 'equipos');
+        } catch (err) { mostrarToast('Error exportando: ' + err.message, 'error'); }
+    }
 
-        init();
-    </script>
+    init();
+</script>
 </body>
 </html>
