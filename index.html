@@ -27,8 +27,8 @@
         <div id="msgSuccess" class="msg msg-success"></div>
 
         <div class="form-group">
-            <label>Usuario</label>
-            <input type="email" id="loginEmail" placeholder="correo@empresa.com" autocomplete="username">
+            <label>Usuario o Email</label>
+            <input type="text" id="loginEmail" placeholder="Carlos o correo@empresa.com" autocomplete="username">
         </div>
 
         <div class="form-group">
@@ -82,7 +82,7 @@
 
     // Login
     document.getElementById('loginBtn').addEventListener('click', async () => {
-        const email    = document.getElementById('loginEmail').value.trim();
+        const input    = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
         const errEl    = document.getElementById('msgError');
         const okEl     = document.getElementById('msgSuccess');
@@ -90,7 +90,7 @@
         errEl.style.display = 'none';
         okEl.style.display  = 'none';
 
-        if (!email || !password) {
+        if (!input || !password) {
             errEl.textContent = 'Complete usuario y contraseña.';
             errEl.style.display = 'block';
             return;
@@ -101,21 +101,12 @@
         btn.disabled = true;
 
         try {
-            const { data, error } = await window.db.auth.signInWithPassword({ email, password });
-            if (error) throw error;
-
-            const { data: perfil, error: perfilErr } = await supabase
-                .from('perfiles').select('nombre, rol').eq('id', data.user.id).single();
-            if (perfilErr || !perfil) throw new Error('Perfil no encontrado. Contacte al administrador.');
-
+            const { perfil } = await loginConNombreOEmail(input, password);
             okEl.textContent = `✓ Bienvenido, ${perfil.nombre}. Redirigiendo...`;
             okEl.style.display = 'block';
             setTimeout(() => window.location.href = 'dashboard.html', 800);
         } catch (err) {
-            const msg = err.message === 'Invalid login credentials'
-                ? 'Credenciales incorrectas. Verifique usuario y contraseña.'
-                : err.message;
-            errEl.textContent = msg;
+            errEl.textContent = err.message;
             errEl.style.display = 'block';
             btn.textContent = 'Acceder al Sistema';
             btn.disabled = false;
