@@ -225,25 +225,20 @@ async function cargarUsuarios() {
 async function crearUsuario(email, password, nombre, rol, telefono = '') {
     if (!password || password.length < 6) throw new Error('Contraseña mínimo 6 caracteres');
 
-    // 1. Crear en Authentication
-    const { data: authData, error: authError } = await window.db.auth.signUp({
-        email, password, options: { data: { nombre, rol } }
+    // Usar Edge Function para crear con email confirmado automáticamente
+    const { data: { session } } = await window.db.auth.getSession();
+    const res = await fetch(EDGE_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ action: 'create_user', email, password, nombre, rol, telefono }),
     });
-    if (authError) throw authError;
 
-    const userId = authData.user.id;
-
-    // 2. Crear perfil
-    const { error: perfilError } = await window.db.from('perfiles')
-        .insert({ id: userId, email, nombre, rol, telefono: telefono || null, activo: true });
-    if (perfilError) throw perfilError;
-
-    // 3. Guardar contraseña visible para el admin
-    const { error: credError } = await window.db.from('credenciales_admin')
-        .insert({ usuario_id: userId, email, password_visible: password });
-    if (credError) console.warn('No se pudo guardar credencial visible:', credError.message);
-
-    return { userId, email, nombre, password };
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Error al crear usuario');
+    return result;
 }
 
 async function actualizarUsuario(id, data) {
@@ -266,7 +261,7 @@ async function cambiarPasswordAdmin(userId, newPassword) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ userId, newPassword }),
+        body: JSON.stringify({ action: 'update_password', userId, newPassword }),
     });
 
     const result = await res.json();
