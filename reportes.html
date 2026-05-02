@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial MS - Reportes</title>
+    <title>Industrial MS — Reportes</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,48 +13,135 @@
     <script src="app.js"></script>
 </head>
 <body>
-    <div class="header">
-        <div class="logo-area"><div class="logo-icon">🔧</div><div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div></div>
-        <div class="nav-menu">
-            <button class="nav-btn" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
-            <button class="nav-btn" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
-            <button class="nav-btn" onclick="location.href='ordenes.html'">📋 OT</button>
-            <button class="nav-btn" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
-            <button class="nav-btn active" onclick="location.href='reportes.html'">📈 REPORTES</button>
-            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
-            <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
+
+<header class="header">
+    <div class="logo-area">
+        <div class="logo-icon">🔧</div>
+        <div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div>
+    </div>
+    <nav class="nav-menu">
+        <button class="nav-btn" onclick="location.href='dashboard.html'">📊 Dashboard</button>
+        <button class="nav-btn" onclick="location.href='equipos.html'">🔌 Equipos</button>
+        <button class="nav-btn" onclick="location.href='ordenes.html'">📋 Órdenes</button>
+        <button class="nav-btn" onclick="location.href='actividades.html'">⏱ Actividades</button>
+        <button class="nav-btn active" onclick="location.href='reportes.html'">📈 Reportes</button>
+        <button class="nav-btn" id="navUsuarios" onclick="location.href='usuarios.html'" style="display:none;">👥 Usuarios</button>
+        <button class="nav-btn logout-btn" id="logoutBtn">🚪 Salir</button>
+    </nav>
+    <div class="user-info">
+        <div class="user-avatar">👤</div>
+        <div><div class="user-name" id="userName">—</div><div class="user-role" id="userRol">—</div></div>
+    </div>
+</header>
+
+<main class="main-content">
+
+    <div class="page-header">
+        <div>
+            <div class="page-title">Reportes y Exportación</div>
+            <div class="page-subtitle">Descarga los datos del sistema en Excel o PDF</div>
         </div>
-        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Usuario</div><div class="user-role" id="userRol">ROL</div></div></div>
     </div>
 
-    <div class="main-content">
-        <div class="card">
-            <div class="card-title">📊 REPORTES</div>
-            <div class="report-grid">
-                <div class="report-card"><div class="report-icon">🔌</div><h3>EQUIPOS</h3><p>Catálogo de equipos</p><div class="report-buttons"><button class="btn btn-secondary btn-sm" onclick="exportarEquiposExcel()">📊 EXCEL</button><button class="btn btn-secondary btn-sm" onclick="exportarEquiposPDF()">📄 PDF</button></div></div>
-                <div class="report-card"><div class="report-icon">📋</div><h3>ÓRDENES</h3><p>Todas las OT</p><div class="report-buttons"><button class="btn btn-secondary btn-sm" onclick="exportarOTsExcel()">📊 EXCEL</button><button class="btn btn-secondary btn-sm" onclick="exportarOTsPDF()">📄 PDF</button></div></div>
-                <div class="report-card"><div class="report-icon">⏱️</div><h3>ACTIVIDADES</h3><p>Detalle de actividades</p><div class="report-buttons"><button class="btn btn-secondary btn-sm" onclick="exportarActividadesExcel()">📊 EXCEL</button></div></div>
+    <div class="card">
+        <div class="card-title">Exportar Datos</div>
+        <div class="report-grid">
+
+            <div class="report-card">
+                <div class="report-icon">🔌</div>
+                <h3>Equipos</h3>
+                <p>Catálogo completo con criticidad y centro de costo</p>
+                <div class="report-buttons">
+                    <button class="btn btn-secondary btn-sm" onclick="repEquiposExcel()">📊 Excel</button>
+                    <button class="btn btn-secondary btn-sm" onclick="repEquiposPDF()">📄 PDF</button>
+                </div>
             </div>
+
+            <div class="report-card">
+                <div class="report-icon">📋</div>
+                <h3>Órdenes de Trabajo</h3>
+                <p>Todas las OT con estado, prioridad y fechas</p>
+                <div class="report-buttons">
+                    <button class="btn btn-secondary btn-sm" onclick="repOTsExcel()">📊 Excel</button>
+                    <button class="btn btn-secondary btn-sm" onclick="repOTsPDF()">📄 PDF</button>
+                </div>
+            </div>
+
+            <div class="report-card">
+                <div class="report-icon">⏱</div>
+                <h3>Actividades</h3>
+                <p>Detalle de actividades por OT con horas trabajadas</p>
+                <div class="report-buttons">
+                    <button class="btn btn-secondary btn-sm" onclick="repActsExcel()">📊 Excel</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <script>
-        async function init() {
-            const { user, perfil } = await verificarSesion();
-            if (!user) return;
-            document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
-            document.getElementById('userRol').textContent = perfil?.rol?.toUpperCase() || 'ROL';
-            if (perfil?.rol === 'admin') document.getElementById('navUsuarios').style.display = 'block';
-            document.getElementById('logoutBtn').onclick = logout;
-        }
+</main>
 
-        async function exportarEquiposExcel() { const { data } = await supabase.from('equipos').select('*'); exportarExcel(data, 'equipos', 'Equipos'); }
-        async function exportarEquiposPDF() { const { data } = await supabase.from('equipos').select('numero, nombre, codigo_completo, criticidad'); const body = (data || []).map(e => [e.numero, e.nombre, e.codigo_completo, e.criticidad]); exportarPDF(['N°', 'EQUIPO', 'CÓDIGO', 'CRITICIDAD'], body, 'equipos'); }
-        async function exportarOTsExcel() { const { data } = await supabase.from('ordenes_trabajo').select('numero_ot, titulo, prioridad, estado, created_at'); exportarExcel(data, 'ordenes_trabajo', 'OTs'); }
-        async function exportarOTsPDF() { const { data } = await supabase.from('ordenes_trabajo').select('numero_ot, titulo, prioridad, estado'); const body = (data || []).map(ot => [ot.numero_ot, ot.titulo, ot.prioridad, ot.estado]); exportarPDF(['N° OT', 'TÍTULO', 'PRIORIDAD', 'ESTADO'], body, 'ordenes_trabajo'); }
-        async function exportarActividadesExcel() { const { data } = await supabase.from('actividades_ot').select('descripcion, tecnico, estado, created_at, ordenes_trabajo(numero_ot)'); const exportData = (data || []).map(a => ({ OT: a.ordenes_trabajo?.numero_ot, Descripción: a.descripcion, Técnico: a.tecnico, Estado: a.estado, Fecha: new Date(a.created_at).toLocaleDateString() })); exportarExcel(exportData, 'actividades', 'Actividades'); }
+<script>
+    async function init() {
+        await cargarHeader('reportes');
+    }
 
-        init();
-    </script>
+    async function repEquiposExcel() {
+        try {
+            const { data } = await supabase.from('equipos')
+                .select('numero, nombre, codigo_completo, centro_costo, proceso, criticidad, puntaje_criticidad, activo');
+            await exportarExcel(data, 'equipos', 'Equipos');
+        } catch (err) { mostrarToast('Error: ' + err.message, 'error'); }
+    }
+
+    async function repEquiposPDF() {
+        try {
+            const { data } = await supabase.from('equipos')
+                .select('numero, nombre, codigo_completo, centro_costo, criticidad');
+            const body = (data || []).map(e => [e.numero ?? '—', e.nombre, e.codigo_completo, e.centro_costo || '—', e.criticidad ?? '—']);
+            await exportarPDF(['N°', 'Equipo', 'Código', 'Centro de Costo', 'Criticidad'], body, 'equipos');
+        } catch (err) { mostrarToast('Error: ' + err.message, 'error'); }
+    }
+
+    async function repOTsExcel() {
+        try {
+            const { data } = await supabase.from('ordenes_trabajo')
+                .select('numero_ot, titulo, tipo_mantenimiento, prioridad, estado, fecha_inicio, fecha_fin, created_at');
+            await exportarExcel(data, 'ordenes_trabajo', 'Órdenes');
+        } catch (err) { mostrarToast('Error: ' + err.message, 'error'); }
+    }
+
+    async function repOTsPDF() {
+        try {
+            const { data } = await supabase.from('ordenes_trabajo')
+                .select('numero_ot, titulo, prioridad, estado, created_at');
+            const body = (data || []).map(ot => [
+                ot.numero_ot, ot.titulo, ot.prioridad, ot.estado,
+                new Date(ot.created_at).toLocaleDateString('es-ES')
+            ]);
+            await exportarPDF(['N° OT', 'Título', 'Prioridad', 'Estado', 'Fecha'], body, 'ordenes_trabajo');
+        } catch (err) { mostrarToast('Error: ' + err.message, 'error'); }
+    }
+
+    async function repActsExcel() {
+        try {
+            const { data } = await supabase.from('actividades_ot')
+                .select('descripcion, tecnico, estado, inicio, fin, total_horas_numeric, created_at, ordenes_trabajo(numero_ot)');
+            const exportData = (data || []).map(a => ({
+                'N° OT':       a.ordenes_trabajo?.numero_ot || '—',
+                'Descripción': a.descripcion,
+                'Técnico':     a.tecnico || '—',
+                'Estado':      a.estado,
+                'Inicio':      a.inicio ? new Date(a.inicio).toLocaleString('es-ES') : '—',
+                'Fin':         a.fin ? new Date(a.fin).toLocaleString('es-ES') : '—',
+                'Horas':       a.total_horas_numeric ?? '—',
+                'Fecha Reg.':  new Date(a.created_at).toLocaleDateString('es-ES'),
+            }));
+            await exportarExcel(exportData, 'actividades', 'Actividades');
+        } catch (err) { mostrarToast('Error: ' + err.message, 'error'); }
+    }
+
+    init();
+</script>
 </body>
 </html>
