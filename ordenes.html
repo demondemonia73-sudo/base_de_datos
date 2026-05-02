@@ -3,178 +3,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial MS - Órdenes</title>
+    <title>Industrial MS — Órdenes de Trabajo</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="styles.css">
     <script src="config.js"></script>
     <script src="app.js"></script>
 </head>
 <body>
-    <div class="header">
-        <div class="logo-area"><div class="logo-icon">🔧</div><div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div></div>
-        <div class="nav-menu">
-            <button class="nav-btn" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
-            <button class="nav-btn" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
-            <button class="nav-btn active" onclick="location.href='ordenes.html'">📋 OT</button>
-            <button class="nav-btn" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
-            <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
-            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
-            <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
+
+<header class="header">
+    <div class="logo-area">
+        <div class="logo-icon">🔧</div>
+        <div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div>
+    </div>
+    <nav class="nav-menu">
+        <button class="nav-btn" onclick="location.href='dashboard.html'">📊 Dashboard</button>
+        <button class="nav-btn" onclick="location.href='equipos.html'">🔌 Equipos</button>
+        <button class="nav-btn active" onclick="location.href='ordenes.html'">📋 Órdenes</button>
+        <button class="nav-btn" onclick="location.href='actividades.html'">⏱ Actividades</button>
+        <button class="nav-btn" onclick="location.href='reportes.html'">📈 Reportes</button>
+        <button class="nav-btn" id="navUsuarios" onclick="location.href='usuarios.html'" style="display:none;">👥 Usuarios</button>
+        <button class="nav-btn logout-btn" id="logoutBtn">🚪 Salir</button>
+    </nav>
+    <div class="user-info">
+        <div class="user-avatar">👤</div>
+        <div><div class="user-name" id="userName">—</div><div class="user-role" id="userRol">—</div></div>
+    </div>
+</header>
+
+<main class="main-content">
+
+    <div class="page-header">
+        <div>
+            <div class="page-title">Órdenes de Trabajo</div>
+            <div class="page-subtitle" id="otsCount">Cargando...</div>
         </div>
-        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Usuario</div><div class="user-role" id="userRol">ROL</div></div></div>
+        <button class="btn" onclick="openModal('modalNuevaOT')">➕ Nueva OT</button>
     </div>
 
-    <div class="main-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">📋 ÓRDENES DE TRABAJO</div>
-                <button class="btn" onclick="openModal('otModal')">➕ NUEVA OT</button>
+    <div class="card">
+        <div class="filter-bar">
+            <input type="text" id="searchOT" placeholder="🔍 Buscar por N° o título..." oninput="filtrar()">
+            <select id="filterEstado" onchange="filtrar()">
+                <option value="">Todos los estados</option>
+                <option value="Pendiente">⏳ Pendiente</option>
+                <option value="En Progreso">🔄 En Progreso</option>
+                <option value="Completada">✅ Completada</option>
+                <option value="Cancelada">✕ Cancelada</option>
+            </select>
+            <select id="filterPrioridad" onchange="filtrar()">
+                <option value="">Todas las prioridades</option>
+                <option value="Urgente">🔴 Urgente</option>
+                <option value="Alta">🟠 Alta</option>
+                <option value="Normal">🔵 Normal</option>
+                <option value="Baja">🟢 Baja</option>
+            </select>
+        </div>
+        <div class="table-wrapper" id="otsTable">
+            <div class="empty-state"><div class="empty-icon">📋</div><p>Cargando órdenes...</p></div>
+        </div>
+    </div>
+
+</main>
+
+<!-- ===== MODAL: Nueva OT ===== -->
+<div id="modalNuevaOT" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>➕ Nueva Orden de Trabajo</h3>
+            <span class="close-modal" onclick="closeModal('modalNuevaOT')">✕</span>
+        </div>
+        <div class="form-group">
+            <label>Título *</label>
+            <input type="text" id="otTitulo" placeholder="Ej: Mantenimiento preventivo compresor">
+        </div>
+        <div class="form-group">
+            <label>Equipo</label>
+            <select id="otEquipoId"><option value="">— Sin equipo —</option></select>
+        </div>
+        <div class="form-group">
+            <label>Descripción</label>
+            <textarea id="otDescripcion" rows="3" placeholder="Detalle del trabajo a realizar..."></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Prioridad</label>
+                <select id="otPrioridad">
+                    <option value="Baja">🟢 Baja</option>
+                    <option value="Normal" selected>🔵 Normal</option>
+                    <option value="Alta">🟠 Alta</option>
+                    <option value="Urgente">🔴 Urgente</option>
+                </select>
             </div>
-            <div class="filter-bar">
-                <input type="text" id="searchOT" placeholder="🔍 Buscar OT..." onkeyup="filtrarOTs()">
-                <select id="filterEstado" onchange="filtrarOTs()"><option value="">📊 TODOS</option><option value="Pendiente">⏳ PENDIENTE</option><option value="En Progreso">🔄 EN PROGRESO</option><option value="Completada">✅ COMPLETADA</option></select>
+            <div class="form-group">
+                <label>Tipo de Mantenimiento</label>
+                <select id="otTipo">
+                    <option value="Preventivo">🔧 Preventivo</option>
+                    <option value="Correctivo" selected>🛠 Correctivo</option>
+                    <option value="Predictivo">📡 Predictivo</option>
+                    <option value="Emergencia">🚨 Emergencia</option>
+                </select>
             </div>
-            <div id="otsTable"></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="closeModal('modalNuevaOT')">Cancelar</button>
+            <button class="btn" onclick="submitNuevaOT()">Crear OT</button>
         </div>
     </div>
+</div>
 
-    <!-- Modal Nueva OT -->
-    <div id="otModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><h3>➕ NUEVA OT</h3><span class="close-modal" onclick="closeModal('otModal')">&times;</span></div>
-            <form id="otForm" onsubmit="event.preventDefault(); crearOT()">
-                <div class="form-group"><label>TÍTULO *</label><input type="text" id="otTitulo" required></div>
-                <div class="form-group"><label>EQUIPO</label><select id="otEquipoId"></select></div>
-                <div class="form-group"><label>DESCRIPCIÓN</label><textarea id="otDescripcion" rows="3"></textarea></div>
-                <div class="form-group"><label>PRIORIDAD</label><select id="otPrioridad"><option value="Baja">🟢 BAJA</option><option value="Normal">🔵 NORMAL</option><option value="Alta">🟠 ALTA</option><option value="Urgente">🔴 URGENTE</option></select></div>
-                <div class="form-group"><label>TIPO</label><select id="otTipo"><option value="Preventivo">🔧 PREVENTIVO</option><option value="Correctivo">🛠️ CORRECTIVO</option></select></div>
-                <button type="submit" class="btn">CREAR OT</button>
-            </form>
+<!-- ===== MODAL: Ver OT ===== -->
+<div id="modalVerOT" class="modal">
+    <div class="modal-content" style="max-width:680px;">
+        <div class="modal-header">
+            <h3 id="verOTTitulo">Detalle OT</h3>
+            <span class="close-modal" onclick="closeModal('modalVerOT')">✕</span>
+        </div>
+        <div id="verOTContent"></div>
+    </div>
+</div>
+
+<!-- ===== MODAL: Editar OT ===== -->
+<div id="modalEditarOT" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>✏️ Editar Orden de Trabajo</h3>
+            <span class="close-modal" onclick="closeModal('modalEditarOT')">✕</span>
+        </div>
+        <input type="hidden" id="editOTId">
+        <div class="form-group">
+            <label>Título</label>
+            <input type="text" id="editOTTitulo">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Estado</label>
+                <select id="editOTEstado">
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En Progreso">En Progreso</option>
+                    <option value="Completada">Completada</option>
+                    <option value="Cancelada">Cancelada</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Prioridad</label>
+                <select id="editOTPrioridad">
+                    <option value="Baja">Baja</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Urgente">Urgente</option>
+                </select>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="closeModal('modalEditarOT')">Cancelar</button>
+            <button class="btn" onclick="submitEditarOT()">Guardar Cambios</button>
         </div>
     </div>
+</div>
 
-    <!-- Modal Ver OT -->
-    <div id="viewModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><h3>👁️ DETALLE OT</h3><span class="close-modal" onclick="closeModal('viewModal')">&times;</span></div>
-            <div id="viewContent"></div>
-        </div>
-    </div>
+<script>
+    let _ots = [];
 
-    <script>
-        let otsData = [];
+    async function init() {
+        await cargarHeader('ordenes');
+        await loadOTs();
+        await poblarEquipos();
+    }
 
-        async function init() {
-            const { user, perfil } = await verificarSesion();
-            if (!user) return;
-            document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
-            document.getElementById('userRol').textContent = perfil?.rol?.toUpperCase() || 'ROL';
-            if (perfil?.rol === 'admin') document.getElementById('navUsuarios').style.display = 'block';
-            document.getElementById('logoutBtn').onclick = logout;
-            await cargarOTs();
-            await cargarSelectEquipos();
+    async function loadOTs() {
+        try {
+            _ots = await cargarOTs();
+            document.getElementById('otsCount').textContent = `${_ots.length} órdenes de trabajo`;
+            renderizar(_ots);
+        } catch (err) {
+            mostrarToast('Error cargando OTs: ' + err.message, 'error');
+        }
+    }
+
+    function renderizar(lista) {
+        if (!lista.length) {
+            document.getElementById('otsTable').innerHTML =
+                '<div class="empty-state"><div class="empty-icon">📋</div><p>No se encontraron órdenes</p></div>';
+            return;
         }
 
-        async function cargarOTs() {
-            otsData = await window.cargarOTs();
-            renderizarOTs(otsData);
-        }
+        let html = `<table class="data-table">
+            <thead><tr>
+                <th>N° OT</th><th>Equipo</th><th>Título</th>
+                <th>Prioridad</th><th>Estado</th><th>Fecha</th><th>Acciones</th>
+            </tr></thead><tbody>`;
 
-        function renderizarOTs(ots) {
-            let html = '<table class="data-table"><thead><tr><th>N° OT</th><th>EQUIPO</th><th>TÍTULO</th><th>PRIORIDAD</th><th>ESTADO</th><th>FECHA</th><th>ACCIONES</th></tr></thead><tbody>';
-            ots.forEach(ot => {
-                let pClass = ot.prioridad === 'Urgente' ? 'badge-critical' : (ot.prioridad === 'Alta' ? 'badge-moderate' : 'badge-low');
-                let eClass = ot.estado === 'Pendiente' ? 'badge-pending' : (ot.estado === 'En Progreso' ? 'badge-progress' : 'badge-completed');
-                html += `<tr>
-                    <td><strong>${ot.numero_ot}</strong></td>
-                    <td>${ot.equipos?.nombre || '-'}</td>
-                    <td>${ot.titulo || '-'}</td>
-                    <td><span class="badge ${pClass}">${ot.prioridad}</span></td>
-                    <td><span class="badge ${eClass}">${ot.estado}</span></td>
-                    <td>${new Date(ot.created_at).toLocaleDateString()}</td>
-                    <td class="action-buttons">
-                        <button class="btn-icon btn-view" onclick="verOT('${ot.id}')">👁️</button>
-                        <button class="btn-icon btn-edit" onclick="editarOT('${ot.id}')">✏️</button>
-                        <button class="btn-icon btn-delete" onclick="eliminarOT('${ot.id}')">🗑️</button>
-                    </td>
-                </tr>`;
-            });
-            html += '</tbody></table>';
-            document.getElementById('otsTable').innerHTML = html || '<p>No hay órdenes</p>';
-        }
+        lista.forEach(ot => {
+            html += `<tr>
+                <td><code>${ot.numero_ot}</code></td>
+                <td style="color:var(--text-secondary)">${ot.equipos?.nombre || '—'}</td>
+                <td><strong>${ot.titulo || '—'}</strong></td>
+                <td>${badgePrioridad(ot.prioridad)}</td>
+                <td>${badgeEstado(ot.estado)}</td>
+                <td style="color:var(--text-muted);font-size:12px;">${formatFecha(ot.created_at)}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-icon btn-view"   onclick="verOT(${ot.id})"     title="Ver detalle">👁</button>
+                        <button class="btn-icon btn-edit"   onclick="editarOT(${ot.id})"  title="Editar">✏️</button>
+                        <button class="btn-icon btn-delete" onclick="borrarOT(${ot.id})"  title="Eliminar">🗑</button>
+                    </div>
+                </td>
+            </tr>`;
+        });
 
-        function filtrarOTs() {
-            let filtered = otsData;
-            const search = document.getElementById('searchOT').value.toLowerCase();
-            if (search) filtered = filtered.filter(ot => ot.numero_ot?.toLowerCase().includes(search) || ot.titulo?.toLowerCase().includes(search));
-            const estado = document.getElementById('filterEstado').value;
-            if (estado) filtered = filtered.filter(ot => ot.estado === estado);
-            renderizarOTs(filtered);
-        }
+        document.getElementById('otsTable').innerHTML = html + '</tbody></table>';
+    }
 
-        async function cargarSelectEquipos() {
-            const { data } = await supabase.from('equipos').select('id, nombre, codigo_completo');
-            const select = document.getElementById('otEquipoId');
-            select.innerHTML = '<option value="">SELECCIONE EQUIPO</option>';
-            data?.forEach(e => select.innerHTML += `<option value="${e.id}">${e.nombre} (${e.codigo_completo})</option>`);
-        }
+    function filtrar() {
+        const q  = document.getElementById('searchOT').value.toLowerCase();
+        const es = document.getElementById('filterEstado').value;
+        const pr = document.getElementById('filterPrioridad').value;
 
-        async function crearOT() {
-            const nuevaOT = {
-                titulo: document.getElementById('otTitulo').value,
+        let r = _ots;
+        if (q)  r = r.filter(o => o.numero_ot?.toLowerCase().includes(q) || o.titulo?.toLowerCase().includes(q));
+        if (es) r = r.filter(o => o.estado === es);
+        if (pr) r = r.filter(o => o.prioridad === pr);
+        renderizar(r);
+    }
+
+    async function poblarEquipos() {
+        const { data } = await supabase.from('equipos').select('id, nombre, codigo_completo').order('nombre');
+        const sel = document.getElementById('otEquipoId');
+        data?.forEach(e => sel.innerHTML += `<option value="${e.id}">${e.nombre} · ${e.codigo_completo}</option>`);
+    }
+
+    async function submitNuevaOT() {
+        const titulo = document.getElementById('otTitulo').value.trim();
+        if (!titulo) { mostrarToast('El título es obligatorio', 'warning'); return; }
+
+        try {
+            await crearOT({
+                titulo,
                 equipo_id: document.getElementById('otEquipoId').value || null,
                 descripcion: document.getElementById('otDescripcion').value,
                 prioridad: document.getElementById('otPrioridad').value,
                 tipo_mantenimiento: document.getElementById('otTipo').value,
-                estado: 'Pendiente'
-            };
-            if (!nuevaOT.titulo) { alert('El título es obligatorio'); return; }
-            try {
-                await window.crearOT(nuevaOT);
-                alert('OT creada exitosamente');
-                closeModal('otModal');
-                document.getElementById('otForm').reset();
-                await cargarOTs();
-            } catch (error) { alert('Error: ' + error.message); }
+                estado: 'Pendiente',
+            });
+            mostrarToast('OT creada correctamente', 'success');
+            closeModal('modalNuevaOT');
+            document.getElementById('otTitulo').value = '';
+            document.getElementById('otDescripcion').value = '';
+            await loadOTs();
+        } catch (err) {
+            mostrarToast('Error: ' + err.message, 'error');
+        }
+    }
+
+    async function verOT(id) {
+        const ot = _ots.find(o => o.id === id);
+        if (!ot) return;
+
+        const { data: acts } = await supabase.from('actividades_ot')
+            .select('*').eq('orden_trabajo_id', id).order('created_at');
+
+        document.getElementById('verOTTitulo').textContent = ot.numero_ot;
+
+        let actsHtml = '';
+        if (!acts?.length) {
+            actsHtml = '<p style="color:var(--text-muted);font-size:13px;margin-top:12px;">Sin actividades registradas</p>';
+        } else {
+            actsHtml = `<table class="data-table" style="margin-top:12px;">
+                <thead><tr><th>Descripción</th><th>Técnico</th><th>Inicio</th><th>Fin</th><th>Horas</th></tr></thead><tbody>`;
+            acts.forEach(a => {
+                actsHtml += `<tr>
+                    <td>${a.descripcion}</td>
+                    <td>${a.tecnico || '—'}</td>
+                    <td style="font-size:11px;">${formatFechaHora(a.inicio)}</td>
+                    <td style="font-size:11px;">${formatFechaHora(a.fin)}</td>
+                    <td>${a.total_horas_numeric != null ? a.total_horas_numeric + ' h' : '—'}</td>
+                </tr>`;
+            });
+            actsHtml += '</tbody></table>';
         }
 
-        async function verOT(id) {
-            const { data: ot } = await supabase.from('ordenes_trabajo').select('*, equipos(*)').eq('id', id).single();
-            const { data: actividades } = await supabase.from('actividades_ot').select('*').eq('orden_trabajo_id', id);
-            let actHtml = '<table class="data-table"><thead><tr><th>DESCRIPCIÓN</th><th>TÉCNICO</th><th>INICIO</th><th>FIN</th><th>HORAS</th></tr></thead><tbody>';
-            actividades?.forEach(a => actHtml += `<tr><td>${a.descripcion}</td><td>${a.tecnico || '-'}</td><td>${a.inicio ? new Date(a.inicio).toLocaleString() : '-'}</td><td>${a.fin ? new Date(a.fin).toLocaleString() : '-'}</td><td>${a.total_horas || '-'}</td></tr>`);
-            actHtml += '</tbody></table>';
-            document.getElementById('viewContent').innerHTML = `
-                <h3 style="color:#ff3b30;">${ot.numero_ot}</h3>
-                <p><strong>📌 Título:</strong> ${ot.titulo}</p>
-                <p><strong>🔧 Equipo:</strong> ${ot.equipos?.nombre || '-'}</p>
-                <p><strong>⚠️ Prioridad:</strong> ${ot.prioridad}</p>
-                <p><strong>📊 Estado:</strong> ${ot.estado}</p>
-                <p><strong>📝 Descripción:</strong> ${ot.descripcion || '-'}</p>
-                <hr style="border-color:#2a2a2a; margin:15px 0;">
-                <h4>⏱️ ACTIVIDADES</h4>
-                ${actHtml}
-                <button class="btn" style="margin-top:15px;" onclick="closeModal('viewModal')">CERRAR</button>`;
-            openModal('viewModal');
-        }
+        document.getElementById('verOTContent').innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                <div><span style="font-size:11px;color:var(--text-muted);">EQUIPO</span><br><strong>${ot.equipos?.nombre || '—'}</strong></div>
+                <div><span style="font-size:11px;color:var(--text-muted);">TIPO</span><br>${ot.tipo_mantenimiento || '—'}</div>
+                <div><span style="font-size:11px;color:var(--text-muted);">PRIORIDAD</span><br>${badgePrioridad(ot.prioridad)}</div>
+                <div><span style="font-size:11px;color:var(--text-muted);">ESTADO</span><br>${badgeEstado(ot.estado)}</div>
+            </div>
+            ${ot.descripcion ? `<div style="background:var(--bg-base);border-radius:8px;padding:12px;font-size:13px;color:var(--text-secondary);margin-bottom:12px;">${ot.descripcion}</div>` : ''}
+            <hr class="divider">
+            <div style="font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:0.05em;">Actividades</div>
+            ${actsHtml}`;
 
-        async function editarOT(id) {
-            const nuevoEstado = prompt('Nuevo estado (Pendiente, En Progreso, Completada, Cancelada):');
-            if (nuevoEstado && ['Pendiente', 'En Progreso', 'Completada', 'Cancelada'].includes(nuevoEstado)) {
-                await supabase.from('ordenes_trabajo').update({ estado: nuevoEstado }).eq('id', id);
-                await cargarOTs();
-            }
-        }
+        openModal('modalVerOT');
+    }
 
-        async function eliminarOT(id) {
-            if (confirm('¿Eliminar esta OT y todas sus actividades?')) {
-                await supabase.from('actividades_ot').delete().eq('orden_trabajo_id', id);
-                await supabase.from('ordenes_trabajo').delete().eq('id', id);
-                await cargarOTs();
-            }
-        }
+    function editarOT(id) {
+        const ot = _ots.find(o => o.id === id);
+        if (!ot) return;
+        document.getElementById('editOTId').value       = ot.id;
+        document.getElementById('editOTTitulo').value   = ot.titulo || '';
+        document.getElementById('editOTEstado').value   = ot.estado;
+        document.getElementById('editOTPrioridad').value = ot.prioridad;
+        openModal('modalEditarOT');
+    }
 
-        init();
-    </script>
+    async function submitEditarOT() {
+        const id = document.getElementById('editOTId').value;
+        try {
+            await actualizarOT(id, {
+                titulo: document.getElementById('editOTTitulo').value,
+                estado: document.getElementById('editOTEstado').value,
+                prioridad: document.getElementById('editOTPrioridad').value,
+            });
+            mostrarToast('OT actualizada', 'success');
+            closeModal('modalEditarOT');
+            await loadOTs();
+        } catch (err) {
+            mostrarToast('Error: ' + err.message, 'error');
+        }
+    }
+
+    async function borrarOT(id) {
+        const ot = _ots.find(o => o.id === id);
+        if (!ot) return;
+        if (!confirm(`¿Eliminar la OT ${ot.numero_ot} y todas sus actividades?\nEsta acción no se puede deshacer.`)) return;
+        try {
+            await eliminarOT(id);
+            mostrarToast('OT eliminada', 'success');
+            await loadOTs();
+        } catch (err) {
+            mostrarToast('Error: ' + err.message, 'error');
+        }
+    }
+
+    init();
+</script>
 </body>
 </html>
