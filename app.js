@@ -175,16 +175,12 @@ async function eliminarActividad(id) {
 async function loginConNombreOEmail(input, password) {
     let email = input.trim();
 
-    // Si no tiene @ es un nombre de usuario — buscar el email en perfiles
+    // Si no tiene @ es un username — buscar email via RPC (sin bloqueo RLS)
     if (!email.includes('@')) {
-        const { data: perfiles, error } = await window.db
-            .from('perfiles')
-            .select('email')
-            .eq('username', input.trim())
-            .eq('activo', true)
-            .limit(1);
-        if (error || !perfiles || perfiles.length === 0) throw new Error('Usuario no encontrado. Use su username o email.');
-        email = perfiles[0].email;
+        const { data: foundEmail, error } = await window.db
+            .rpc('get_email_by_username', { p_username: input.trim() });
+        if (error || !foundEmail) throw new Error('Usuario no encontrado. Use su username o email.');
+        email = foundEmail;
     }
 
     const { data, error } = await window.db.auth.signInWithPassword({ email, password });
