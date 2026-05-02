@@ -1,1 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial MS - Equipos</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-area"><div class="logo-icon">🔧</div><div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div></div>
+        <div class="nav-menu">
+            <button class="nav-btn" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
+            <button class="nav-btn active" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
+            <button class="nav-btn" onclick="location.href='ordenes.html'">📋 OT</button>
+            <button class="nav-btn" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
+            <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
+            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
+            <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
+        </div>
+        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Usuario</div><div class="user-role" id="userRol">ROL</div></div></div>
+    </div>
 
+    <div class="main-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📋 CATÁLOGO DE EQUIPOS</div>
+                <div><button class="btn btn-secondary btn-sm" onclick="exportarEquiposExcel()">📊 EXCEL</button><button class="btn btn-secondary btn-sm" onclick="exportarEquiposPDF()" style="margin-left:10px;">📄 PDF</button></div>
+            </div>
+            <div class="filter-bar">
+                <input type="text" id="searchEquipo" placeholder="🔍 Buscar equipo..." onkeyup="filtrarEquipos()">
+                <select id="filterCriticidad" onchange="filtrarEquipos()"><option value="">📊 TODAS</option><option value="A">🔴 CRÍTICO (A)</option><option value="B">🟡 MODERADO (B)</option><option value="C">🟢 BAJO (C)</option></select>
+            </div>
+            <div id="equiposTable"></div>
+        </div>
+    </div>
+
+    <script>
+        let equiposData = [];
+
+        async function init() {
+            const { user, perfil } = await verificarSesion();
+            if (!user) return;
+            document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
+            document.getElementById('userRol').textContent = perfil?.rol?.toUpperCase() || 'ROL';
+            if (perfil?.rol === 'admin') document.getElementById('navUsuarios').style.display = 'block';
+            document.getElementById('logoutBtn').onclick = logout;
+            await cargarEquipos();
+        }
+
+        async function cargarEquipos() {
+            const data = await window.cargarEquipos();
+            equiposData = data;
+            renderizarEquipos(equiposData);
+        }
+
+        function renderizarEquipos(equipos) {
+            let html = '<table class="data-table"><thead><tr><th>N°</th><th>NOMBRE</th><th>CÓDIGO</th><th>PROCESO</th><th>CRITICIDAD</th></tr></thead><tbody>';
+            equipos.forEach(e => {
+                let badgeClass = e.criticidad === 'A' ? 'badge-critical' : (e.criticidad === 'B' ? 'badge-moderate' : 'badge-low');
+                html += `<tr><td>${e.numero || '-'}</td><td><strong>${e.nombre || '-'}</strong></td><td><code>${e.codigo_completo || '-'}</code></td><td>${e.proceso || '-'}</td><td><span class="badge ${badgeClass}">${e.criticidad || '-'}</span></td></tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('equiposTable').innerHTML = html || '<p>No hay equipos</p>';
+        }
+
+        function filtrarEquipos() {
+            let filtered = equiposData;
+            const search = document.getElementById('searchEquipo').value.toLowerCase();
+            if (search) filtered = filtered.filter(e => e.nombre?.toLowerCase().includes(search) || e.codigo_completo?.toLowerCase().includes(search));
+            const criticidad = document.getElementById('filterCriticidad').value;
+            if (criticidad) filtered = filtered.filter(e => e.criticidad === criticidad);
+            renderizarEquipos(filtered);
+        }
+
+        async function exportarEquiposExcel() {
+            const { data } = await supabase.from('equipos').select('*');
+            exportarExcel(data, 'equipos', 'Equipos');
+        }
+
+        async function exportarEquiposPDF() {
+            const { data } = await supabase.from('equipos').select('numero, nombre, codigo_completo, criticidad');
+            const body = (data || []).map(e => [e.numero, e.nombre, e.codigo_completo, e.criticidad]);
+            exportarPDF(['N°', 'EQUIPO', 'CÓDIGO', 'CRITICIDAD'], body, 'equipos');
+        }
+
+        init();
+    </script>
+</body>
+</html>
