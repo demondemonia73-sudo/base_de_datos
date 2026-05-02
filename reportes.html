@@ -88,7 +88,7 @@
 
     async function repEquiposExcel() {
         try {
-            const { data } = await supabase.from('equipos')
+            const { data } = await window.db.from('equipos')
                 .select('numero, nombre, codigo_completo, centro_costo, proceso, criticidad, puntaje_criticidad, activo');
             await exportarExcel(data, 'equipos', 'Equipos');
         } catch (err) { mostrarToast('Error: ' + err.message, 'error'); }
@@ -96,7 +96,7 @@
 
     async function repEquiposPDF() {
         try {
-            const { data } = await supabase.from('equipos')
+            const { data } = await window.db.from('equipos')
                 .select('numero, nombre, codigo_completo, centro_costo, criticidad');
             const body = (data || []).map(e => [e.numero ?? '—', e.nombre, e.codigo_completo, e.centro_costo || '—', e.criticidad ?? '—']);
             await exportarPDF(['N°', 'Equipo', 'Código', 'Centro de Costo', 'Criticidad'], body, 'equipos');
@@ -105,7 +105,7 @@
 
     async function repOTsExcel() {
         try {
-            const { data } = await supabase.from('ordenes_trabajo')
+            const { data } = await window.db.from('ordenes_trabajo')
                 .select('numero_ot, titulo, tipo_mantenimiento, prioridad, estado, fecha_inicio, fecha_fin, created_at');
             await exportarExcel(data, 'ordenes_trabajo', 'Órdenes');
         } catch (err) { mostrarToast('Error: ' + err.message, 'error'); }
@@ -113,7 +113,7 @@
 
     async function repOTsPDF() {
         try {
-            const { data } = await supabase.from('ordenes_trabajo')
+            const { data } = await window.db.from('ordenes_trabajo')
                 .select('numero_ot, titulo, prioridad, estado, created_at');
             const body = (data || []).map(ot => [
                 ot.numero_ot, ot.titulo, ot.prioridad, ot.estado,
@@ -125,7 +125,7 @@
 
     async function repActsExcel() {
         try {
-            const { data } = await supabase.from('actividades_ot')
+            const { data } = await window.db.from('actividades_ot')
                 .select('descripcion, tecnico, estado, inicio, fin, total_horas_numeric, created_at, ordenes_trabajo(numero_ot)');
             const exportData = (data || []).map(a => ({
                 'N° OT':       a.ordenes_trabajo?.numero_ot || '—',
