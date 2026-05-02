@@ -1,1 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial MS - Actividades</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-area"><div class="logo-icon">🔧</div><div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div></div>
+        <div class="nav-menu">
+            <button class="nav-btn" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
+            <button class="nav-btn" onclick="location.href='equipos.html'">🔌 EQUIPOS</button>
+            <button class="nav-btn" onclick="location.href='ordenes.html'">📋 OT</button>
+            <button class="nav-btn active" onclick="location.href='actividades.html'">⏱️ ACTIVIDADES</button>
+            <button class="nav-btn" onclick="location.href='reportes.html'">📈 REPORTES</button>
+            <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
+            <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
+        </div>
+        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Usuario</div><div class="user-role" id="userRol">ROL</div></div></div>
+    </div>
 
+    <div class="main-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">⏱️ ACTIVIDADES</div>
+                <button class="btn" onclick="openModal('actividadModal')">➕ NUEVA ACTIVIDAD</button>
+            </div>
+            <div id="actividadesTable"></div>
+        </div>
+    </div>
+
+    <!-- Modal Nueva Actividad -->
+    <div id="actividadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>➕ NUEVA ACTIVIDAD</h3><span class="close-modal" onclick="closeModal('actividadModal')">&times;</span></div>
+            <form id="actividadForm" onsubmit="event.preventDefault(); crearActividad()">
+                <div class="form-group"><label>OT</label><select id="actividadOtId" required></select></div>
+                <div class="form-group"><label>DESCRIPCIÓN *</label><textarea id="actividadDescripcion" rows="3" required></textarea></div>
+                <div class="form-group"><label>TÉCNICO</label><input type="text" id="actividadTecnico"></div>
+                <div class="form-group"><label>INICIO</label><input type="datetime-local" id="actividadInicio"></div>
+                <div class="form-group"><label>FIN</label><input type="datetime-local" id="actividadFin"></div>
+                <div class="form-group"><label>ESTADO</label><select id="actividadEstado"><option value="Pendiente">Pendiente</option><option value="En Progreso">En Progreso</option><option value="Completada">Completada</option></select></div>
+                <button type="submit" class="btn">CREAR</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        async function init() {
+            const { user, perfil } = await verificarSesion();
+            if (!user) return;
+            document.getElementById('userName').textContent = perfil?.nombre || 'Usuario';
+            document.getElementById('userRol').textContent = perfil?.rol?.toUpperCase() || 'ROL';
+            if (perfil?.rol === 'admin') document.getElementById('navUsuarios').style.display = 'block';
+            document.getElementById('logoutBtn').onclick = logout;
+            await cargarActividades();
+            await cargarSelectOT();
+        }
+
+        async function cargarActividades() {
+            const data = await window.cargarActividades();
+            renderizarActividades(data);
+        }
+
+        function renderizarActividades(actividades) {
+            let html = '<table class="data-table"><thead><tr><th>OT</th><th>DESCRIPCIÓN</th><th>TÉCNICO</th><th>FECHA</th><th>ESTADO</th><th>ACCIONES</th></tr></thead><tbody>';
+            actividades.forEach(a => {
+                html += `<tr>
+                    <td><strong>${a.ordenes_trabajo?.numero_ot || '-'}</strong></td>
+                    <td>${a.descripcion?.substring(0, 50) || '-'}${a.descripcion?.length > 50 ? '...' : ''}</td>
+                    <td>${a.tecnico || '-'}</td>
+                    <td>${new Date(a.created_at).toLocaleDateString()}</td>
+                    <td><span class="badge badge-pending">${a.estado || 'Pendiente'}</span></td>
+                    <td class="action-buttons">
+                        <button class="btn-icon btn-edit" onclick="editarActividad('${a.id}')">✏️</button>
+                        <button class="btn-icon btn-delete" onclick="eliminarActividad('${a.id}')">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('actividadesTable').innerHTML = html || '<p>No hay actividades</p>';
+        }
+
+        async function cargarSelectOT() {
+            const { data } = await supabase.from('ordenes_trabajo').select('id, numero_ot, titulo');
+            const select = document.getElementById('actividadOtId');
+            select.innerHTML = '<option value="">SELECCIONE OT</option>';
+            data?.forEach(ot => select.innerHTML += `<option value="${ot.id}">${ot.numero_ot} - ${ot.titulo}</option>`);
+        }
+
+        async function crearActividad() {
+            const inicio = document.getElementById('actividadInicio').value;
+            const fin = document.getElementById('actividadFin').value;
+            let totalHoras = null;
+            if (inicio && fin) totalHoras = ((new Date(fin) - new Date(inicio)) / (1000 * 60 * 60)).toFixed(2);
+            const nuevaActividad = {
+                orden_trabajo_id: document.getElementById('actividadOtId').value || null,
+                descripcion: document.getElementById('actividadDescripcion').value,
+                tecnico: document.getElementById('actividadTecnico').value,
+                inicio: inicio || null,
+                fin: fin || null,
+                total_horas_numeric: totalHoras,
+                estado: document.getElementById('actividadEstado').value
+            };
+            if (!nuevaActividad.descripcion) { alert('La descripción es obligatoria'); return; }
+            try {
+                await window.crearActividad(nuevaActividad);
+                alert('Actividad creada');
+                closeModal('actividadModal');
+                document.getElementById('actividadForm').reset();
+                await cargarActividades();
+            } catch (error) { alert('Error: ' + error.message); }
+        }
+
+        function editarActividad(id) { alert('Editar actividad #' + id); }
+        async function eliminarActividad(id) { if (confirm('¿Eliminar actividad?')) { await supabase.from('actividades_ot').delete().eq('id', id); await cargarActividades(); } }
+
+        init();
+    </script>
+</body>
+</html>
