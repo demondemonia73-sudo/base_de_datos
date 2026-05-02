@@ -6,221 +6,43 @@
     <title>Industrial MS - Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="config.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
-            background: #0a0a0a;
-            color: #ffffff;
-        }
-        .header {
-            background: #0d0d0d;
-            border-bottom: 1px solid #2a2a2a;
-            padding: 16px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #ff3b30, #c0392b);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-        .logo-text h1 {
-            font-size: 18px;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-        .logo-text p {
-            font-size: 10px;
-            color: #ff3b30;
-            letter-spacing: 2px;
-        }
-        .nav-menu {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .nav-btn {
-            padding: 8px 20px;
-            background: transparent;
-            border: 1px solid #2a2a2a;
-            border-radius: 30px;
-            color: #b0b0b0;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            font-size: 13px;
-        }
-        .nav-btn:hover, .nav-btn.active {
-            background: #ff3b30;
-            border-color: #ff3b30;
-            color: white;
-        }
-        .logout-btn {
-            background: rgba(255,59,48,0.1);
-            border-color: #ff3b30;
-            color: #ff3b30;
-        }
-        .logout-btn:hover {
-            background: #ff3b30;
-            color: white;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: #121212;
-            padding: 6px 16px;
-            border-radius: 40px;
-            border: 1px solid #2a2a2a;
-        }
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            background: #ff3b30;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-        .user-name {
-            font-weight: 600;
-            font-size: 13px;
-        }
-        .user-role {
-            font-size: 10px;
-            color: #ff3b30;
-        }
-        .main-content {
-            padding: 32px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-        .stat-card {
-            background: #121212;
-            border: 1px solid #2a2a2a;
-            border-radius: 20px;
-            padding: 24px;
-            transition: all 0.2s ease;
-        }
-        .stat-card:hover {
-            border-color: #ff3b30;
-            transform: translateY(-2px);
-        }
-        .stat-icon {
-            font-size: 32px;
-            margin-bottom: 16px;
-        }
-        .stat-label {
-            font-size: 13px;
-            color: #888;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-        .stat-value {
-            font-size: 36px;
-            font-weight: 700;
-            color: #ff3b30;
-        }
-        .stat-change {
-            font-size: 12px;
-            color: #4caf50;
-            margin-top: 8px;
-        }
-        .card {
-            background: #121212;
-            border: 1px solid #2a2a2a;
-            border-radius: 20px;
-            padding: 24px;
-            margin-bottom: 32px;
-        }
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            letter-spacing: 1px;
-            border-left: 3px solid #ff3b30;
-            padding-left: 12px;
-        }
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-        .charts-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-        .chart-container {
-            background: #121212;
-            border: 1px solid #2a2a2a;
-            border-radius: 20px;
-            padding: 20px;
-        }
-        .chart-container h3 {
-            font-size: 14px;
-            margin-bottom: 20px;
-            color: #b0b0b0;
-        }
-        canvas {
-            max-height: 250px;
-        }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .data-table th {
-            text-align: left;
-            padding: 12px 8px;
-            color: #888;
-            font-weight: 500;
-            font-size: 12px;
-            border-bottom: 1px solid #2a2a2a;
-        }
-        .data-table td {
-            padding: 12px 8px;
-            border-bottom: 1px solid #1a1a1a;
-            font-size: 13px;
-        }
-        .badge {
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            display: inline-block;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif; background: #0a0a0a; color: #ffffff; }
+        .header { background: #0d0d0d; border-bottom: 1px solid #2a2a2a; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; position: sticky; top: 0; z-index: 100; }
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #ff3b30, #c0392b); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .logo-text h1 { font-size: 18px; font-weight: 600; letter-spacing: 1px; }
+        .logo-text p { font-size: 10px; color: #ff3b30; letter-spacing: 2px; }
+        .nav-menu { display: flex; gap: 8px; flex-wrap: wrap; }
+        .nav-btn { padding: 8px 20px; background: transparent; border: 1px solid #2a2a2a; border-radius: 30px; color: #b0b0b0; cursor: pointer; transition: all 0.2s ease; font-weight: 500; font-size: 13px; }
+        .nav-btn:hover, .nav-btn.active { background: #ff3b30; border-color: #ff3b30; color: white; }
+        .logout-btn { background: rgba(255,59,48,0.1); border-color: #ff3b30; color: #ff3b30; }
+        .logout-btn:hover { background: #ff3b30; color: white; }
+        .user-info { display: flex; align-items: center; gap: 12px; background: #121212; padding: 6px 16px; border-radius: 40px; border: 1px solid #2a2a2a; }
+        .user-avatar { width: 32px; height: 32px; background: #ff3b30; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .user-name { font-weight: 600; font-size: 13px; }
+        .user-role { font-size: 10px; color: #ff3b30; }
+        .main-content { padding: 32px; max-width: 1400px; margin: 0 auto; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px; }
+        .stat-card { background: #121212; border: 1px solid #2a2a2a; border-radius: 20px; padding: 24px; transition: all 0.2s ease; }
+        .stat-card:hover { border-color: #ff3b30; transform: translateY(-2px); }
+        .stat-icon { font-size: 32px; margin-bottom: 16px; }
+        .stat-label { font-size: 13px; color: #888; letter-spacing: 1px; margin-bottom: 8px; }
+        .stat-value { font-size: 36px; font-weight: 700; color: #ff3b30; }
+        .stat-change { font-size: 12px; color: #4caf50; margin-top: 8px; }
+        .card { background: #121212; border: 1px solid #2a2a2a; border-radius: 20px; padding: 24px; margin-bottom: 32px; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; letter-spacing: 1px; border-left: 3px solid #ff3b30; padding-left: 12px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px; }
+        .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+        .chart-container { background: #121212; border: 1px solid #2a2a2a; border-radius: 20px; padding: 20px; }
+        .chart-container h3 { font-size: 14px; margin-bottom: 20px; color: #b0b0b0; }
+        canvas { max-height: 250px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { text-align: left; padding: 12px 8px; color: #888; font-weight: 500; font-size: 12px; border-bottom: 1px solid #2a2a2a; }
+        .data-table td { padding: 12px 8px; border-bottom: 1px solid #1a1a1a; font-size: 13px; }
+        .badge { padding: 4px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
         .badge-critical { background: #ff3b30; color: white; }
         .badge-moderate { background: #ffc107; color: #0a0a0a; }
         .badge-low { background: #28a745; color: white; }
@@ -229,25 +51,15 @@
         .badge-completed { background: #28a745; color: white; }
         .badge-urgent { background: #ff3b30; color: white; }
         .badge-high { background: #ff6b6b; color: white; }
-        @media (max-width: 1024px) {
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .charts-row { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 768px) {
-            .header { flex-direction: column; align-items: stretch; }
-            .stats-grid { grid-template-columns: 1fr; }
-            .main-content { padding: 20px; }
-        }
+        @media (max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .charts-row { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { .header { flex-direction: column; align-items: stretch; } .stats-grid { grid-template-columns: 1fr; } .main-content { padding: 20px; } }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="logo-area">
             <div class="logo-icon">🔧</div>
-            <div class="logo-text">
-                <h1>INDUSTRIAL MS</h1>
-                <p>MAINTENANCE SYSTEM</p>
-            </div>
+            <div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div>
         </div>
         <div class="nav-menu">
             <button class="nav-btn active" onclick="location.href='dashboard.html'">📊 DASHBOARD</button>
@@ -258,88 +70,32 @@
             <button class="nav-btn" id="navUsuarios" style="display:none;" onclick="location.href='usuarios.html'">👥 USUARIOS</button>
             <button class="nav-btn logout-btn" id="logoutBtn">🚪 SALIR</button>
         </div>
-        <div class="user-info">
-            <div class="user-avatar">👤</div>
-            <div>
-                <div class="user-name" id="userName">Administrador</div>
-                <div class="user-role" id="userRol">ADMIN</div>
-            </div>
-        </div>
+        <div class="user-info"><div class="user-avatar">👤</div><div><div class="user-name" id="userName">Administrador</div><div class="user-role" id="userRol">ADMIN</div></div></div>
     </div>
 
     <div class="main-content">
         <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">🔧</div>
-                <div class="stat-label">TOTAL EQUIPOS</div>
-                <div class="stat-value" id="totalEquipos">0</div>
-                <div class="stat-change" id="equiposChange">Cargando...</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">⚠️</div>
-                <div class="stat-label">EQUIPOS CRÍTICOS (A)</div>
-                <div class="stat-value" id="equiposCriticos">0</div>
-                <div class="stat-change" id="criticosChange">Requieren atención</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">⏳</div>
-                <div class="stat-label">OT PENDIENTES</div>
-                <div class="stat-value" id="otsPendientes">0</div>
-                <div class="stat-change" id="pendientesChange">Por asignar</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">✅</div>
-                <div class="stat-label">OT COMPLETADAS</div>
-                <div class="stat-value" id="otsCompletadas">0</div>
-                <div class="stat-change" id="completadasChange">Este mes</div>
-            </div>
+            <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-label">TOTAL EQUIPOS</div><div class="stat-value" id="totalEquipos">0</div><div class="stat-change" id="equiposChange">Cargando...</div></div>
+            <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">EQUIPOS CRÍTICOS (A)</div><div class="stat-value" id="equiposCriticos">0</div><div class="stat-change" id="criticosChange">Requieren atención</div></div>
+            <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-label">OT PENDIENTES</div><div class="stat-value" id="otsPendientes">0</div><div class="stat-change" id="pendientesChange">Por asignar</div></div>
+            <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">OT COMPLETADAS</div><div class="stat-value" id="otsCompletadas">0</div><div class="stat-change" id="completadasChange">Este mes</div></div>
         </div>
 
         <div class="charts-row">
-            <div class="chart-container">
-                <h3>📊 ÓRDENES DE TRABAJO POR ESTADO</h3>
-                <canvas id="estadosChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <h3>📊 EQUIPOS POR CRITICIDAD</h3>
-                <canvas id="criticidadChart"></canvas>
-            </div>
+            <div class="chart-container"><h3>📊 ÓRDENES DE TRABAJO POR ESTADO</h3><canvas id="estadosChart"></canvas></div>
+            <div class="chart-container"><h3>📊 EQUIPOS POR CRITICIDAD</h3><canvas id="criticidadChart"></canvas></div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">📋 ÚLTIMAS ÓRDENES DE TRABAJO</div>
-                <button class="nav-btn" onclick="location.href='ordenes.html'">VER TODAS →</button>
-            </div>
-            <div id="ultimasOTs"></div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">⚠️ EQUIPOS CON CRITICIDAD A (CRÍTICOS)</div>
-                <button class="nav-btn" onclick="location.href='equipos.html'">VER TODOS →</button>
-            </div>
-            <div id="equiposCriticosList"></div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">⏱️ ACTIVIDADES RECIENTES</div>
-            <div id="actividadesRecientes"></div>
-        </div>
+        <div class="card"><div class="card-header"><div class="card-title">📋 ÚLTIMAS ÓRDENES DE TRABAJO</div><button class="nav-btn" onclick="location.href='ordenes.html'">VER TODAS →</button></div><div id="ultimasOTs"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">⚠️ EQUIPOS CON CRITICIDAD A (CRÍTICOS)</div><button class="nav-btn" onclick="location.href='equipos.html'">VER TODOS →</button></div><div id="equiposCriticosList"></div></div>
+        <div class="card"><div class="card-title">⏱️ ACTIVIDADES RECIENTES</div><div id="actividadesRecientes"></div></div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://inghjpgqahmceplasunr.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_-_MBMDKrs8qfUlwscp9phQ_V9w1TjYv';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
         let estadosChart, criticidadChart;
         let currentUserRol = null;
 
-        async function logout() {
-            await supabase.auth.signOut();
-            window.location.href = 'index.html';
-        }
+        async function logout() { await supabase.auth.signOut(); window.location.href = 'index.html'; }
 
         async function loadDashboard() {
             try {
@@ -352,91 +108,57 @@
                 const { count: otsEnProgreso } = await supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'En Progreso');
                 const inicioMes = new Date(); inicioMes.setDate(1);
                 const { count: otsCompletadas } = await supabase.from('ordenes_trabajo').select('*', { count: 'exact', head: true }).eq('estado', 'Completada').gte('created_at', inicioMes.toISOString());
-                
                 document.getElementById('otsPendientes').textContent = otsPendientes || 0;
                 document.getElementById('otsCompletadas').textContent = otsCompletadas || 0;
-                document.getElementById('pendientesChange').innerHTML = `${otsEnProgreso || 0} en progreso`;
 
                 const { data: estadosData } = await supabase.from('ordenes_trabajo').select('estado');
                 const estadosCount = { Pendiente: 0, 'En Progreso': 0, Completada: 0, Cancelada: 0 };
                 estadosData?.forEach(ot => estadosCount[ot.estado] = (estadosCount[ot.estado] || 0) + 1);
-
                 if (estadosChart) estadosChart.destroy();
                 const ctx1 = document.getElementById('estadosChart').getContext('2d');
-                estadosChart = new Chart(ctx1, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Pendiente', 'En Progreso', 'Completada', 'Cancelada'],
-                        datasets: [{ data: [estadosCount.Pendiente, estadosCount['En Progreso'], estadosCount.Completada, estadosCount.Cancelada], backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#6c757d'], borderWidth: 0 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } }
-                });
+                estadosChart = new Chart(ctx1, { type: 'doughnut', data: { labels: ['Pendiente', 'En Progreso', 'Completada', 'Cancelada'], datasets: [{ data: [estadosCount.Pendiente, estadosCount['En Progreso'], estadosCount.Completada, estadosCount.Cancelada], backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#6c757d'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } } });
 
                 const { data: criticidadData } = await supabase.from('equipos').select('criticidad');
                 const criticidadCount = { A: 0, B: 0, C: 0 };
                 criticidadData?.forEach(e => { if (e.criticidad) criticidadCount[e.criticidad] = (criticidadCount[e.criticidad] || 0) + 1; });
-
                 if (criticidadChart) criticidadChart.destroy();
                 const ctx2 = document.getElementById('criticidadChart').getContext('2d');
-                criticidadChart = new Chart(ctx2, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Crítico (A)', 'Moderado (B)', 'Bajo (C)'],
-                        datasets: [{ label: 'Cantidad', data: [criticidadCount.A, criticidadCount.B, criticidadCount.C], backgroundColor: ['#ff3b30', '#ffc107', '#28a745'], borderRadius: 8 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#fff' }, grid: { color: '#2a2a2a' } }, x: { ticks: { color: '#fff' } } } }
-                });
+                criticidadChart = new Chart(ctx2, { type: 'bar', data: { labels: ['Crítico (A)', 'Moderado (B)', 'Bajo (C)'], datasets: [{ label: 'Cantidad', data: [criticidadCount.A, criticidadCount.B, criticidadCount.C], backgroundColor: ['#ff3b30', '#ffc107', '#28a745'], borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#fff' }, grid: { color: '#2a2a2a' } }, x: { ticks: { color: '#fff' } } } } });
 
                 const { data: ultimasOTs } = await supabase.from('ordenes_trabajo').select('numero_ot, titulo, prioridad, estado, created_at').order('created_at', { ascending: false }).limit(5);
                 let otsHtml = '<table class="data-table"><thead><tr><th>N° OT</th><th>TÍTULO</th><th>PRIORIDAD</th><th>ESTADO</th><th>FECHA</th></tr></thead><tbody>';
-                ultimasOTs?.forEach(ot => {
-                    let prioridadClass = ot.prioridad === 'Urgente' ? 'badge-urgent' : (ot.prioridad === 'Alta' ? 'badge-high' : (ot.prioridad === 'Normal' ? 'badge-moderate' : 'badge-low'));
-                    let estadoClass = ot.estado === 'Pendiente' ? 'badge-pending' : (ot.estado === 'En Progreso' ? 'badge-progress' : 'badge-completed');
-                    otsHtml += `<tr><td><strong>${ot.numero_ot || '-'}</strong></td><td>${ot.titulo || '-'}</td><td><span class="badge ${prioridadClass}">${ot.prioridad || '-'}</span></td><td><span class="badge ${estadoClass}">${ot.estado || '-'}</span></td><td>${new Date(ot.created_at).toLocaleDateString()}</td></tr>`;
-                });
+                ultimasOTs?.forEach(ot => { let pClass = ot.prioridad === 'Urgente' ? 'badge-urgent' : (ot.prioridad === 'Alta' ? 'badge-high' : (ot.prioridad === 'Normal' ? 'badge-moderate' : 'badge-low')); let eClass = ot.estado === 'Pendiente' ? 'badge-pending' : (ot.estado === 'En Progreso' ? 'badge-progress' : 'badge-completed'); otsHtml += `<tr><td><strong>${ot.numero_ot || '-'}</strong></td><td>${ot.titulo || '-'}</td><td><span class="badge ${pClass}">${ot.prioridad || '-'}</span></td><td><span class="badge ${eClass}">${ot.estado || '-'}</span></td><td>${new Date(ot.created_at).toLocaleDateString()}</td></tr>`; });
                 otsHtml += '</tbody></table>';
                 document.getElementById('ultimasOTs').innerHTML = otsHtml || '<p style="color:#888;">No hay órdenes</p>';
 
                 const { data: criticos } = await supabase.from('equipos').select('nombre, codigo_completo, proceso').eq('criticidad', 'A').limit(10);
-                let criticosHtml = '<table class="data-table"><thead><tr><th>EQUIPO</th><th>CÓDIGO</th><th>PROCESO</th><th>CRITICIDAD</th></tr></thead><tbody>';
+                let criticosHtml = '<table class="data-table"><thead></tr><th>EQUIPO</th><th>CÓDIGO</th><th>PROCESO</th><th>CRITICIDAD</th></tr></thead><tbody>';
                 criticos?.forEach(e => criticosHtml += `<tr><td>${e.nombre}</td><td><code>${e.codigo_completo}</code></td><td>${e.proceso || '-'}</td><td><span class="badge badge-critical">A - CRÍTICO</span></td></tr>`);
                 criticosHtml += '</tbody></table>';
                 document.getElementById('equiposCriticosList').innerHTML = criticosHtml || '<p style="color:#888;">Sin equipos críticos</p>';
 
                 const { data: actividades } = await supabase.from('actividades_ot').select('descripcion, tecnico, estado, created_at, ordenes_trabajo(numero_ot)').order('created_at', { ascending: false }).limit(5);
                 let actHtml = '<table class="data-table"><thead><tr><th>OT</th><th>ACTIVIDAD</th><th>TÉCNICO</th><th>ESTADO</th><th>FECHA</th></tr></thead><tbody>';
-                actividades?.forEach(a => {
-                    let estadoClass = a.estado === 'Pendiente' ? 'badge-pending' : (a.estado === 'En Progreso' ? 'badge-progress' : 'badge-completed');
-                    actHtml += `<tr><td><strong>${a.ordenes_trabajo?.numero_ot || '-'}</strong></td><td>${a.descripcion?.substring(0, 50) || '-'}${a.descripcion?.length > 50 ? '...' : ''}</td><td>${a.tecnico || '-'}</td><td><span class="badge ${estadoClass}">${a.estado || '-'}</span></td><td>${new Date(a.created_at).toLocaleDateString()}</td></tr>`;
-                });
+                actividades?.forEach(a => { let eClass = a.estado === 'Pendiente' ? 'badge-pending' : (a.estado === 'En Progreso' ? 'badge-progress' : 'badge-completed'); actHtml += `<tr><td><strong>${a.ordenes_trabajo?.numero_ot || '-'}</strong></td><td>${a.descripcion?.substring(0, 50) || '-'}${a.descripcion?.length > 50 ? '...' : ''}</td><td>${a.tecnico || '-'}</td><td><span class="badge ${eClass}">${a.estado || '-'}</span></td><td>${new Date(a.created_at).toLocaleDateString()}</td></tr>`; });
                 actHtml += '</tbody></table>';
                 document.getElementById('actividadesRecientes').innerHTML = actHtml || '<p style="color:#888;">Sin actividades</p>';
-
             } catch (error) { console.error('Error:', error); }
         }
 
         async function init() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
-            
             const { data: perfil } = await supabase.from('perfiles').select('nombre, rol').eq('id', session.user.id).single();
             if (perfil) {
                 document.getElementById('userName').textContent = perfil.nombre || 'Administrador';
                 document.getElementById('userRol').textContent = perfil.rol?.toUpperCase() || 'ADMIN';
                 currentUserRol = perfil.rol;
-                
-                // Mostrar botón de usuarios solo para admin
-                if (currentUserRol === 'admin') {
-                    const usuariosBtn = document.getElementById('navUsuarios');
-                    if (usuariosBtn) usuariosBtn.style.display = 'block';
-                }
+                if (currentUserRol === 'admin') document.getElementById('navUsuarios').style.display = 'block';
             }
-            
             document.getElementById('logoutBtn').onclick = logout;
             await loadDashboard();
             setInterval(loadDashboard, 30000);
         }
-
         init();
     </script>
 </body>
