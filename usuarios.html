@@ -17,7 +17,10 @@
         <div class="logo-icon">👥</div>
         <div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div>
     </div>
-    <nav class="nav-menu">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Menú">
+        <span></span><span></span><span></span>
+    </button>
+    <nav class="nav-menu" id="navMenu">
         <button class="nav-btn" onclick="location.href='dashboard.html'">📊 Dashboard</button>
         <button class="nav-btn" onclick="location.href='equipos.html'">🔌 Equipos</button>
         <button class="nav-btn" onclick="location.href='ordenes.html'">📋 Órdenes</button>
@@ -377,6 +380,7 @@
         }
     }
 
+    initHamburger();
     init();
 </script>
 </body>
