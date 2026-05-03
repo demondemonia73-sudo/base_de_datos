@@ -19,7 +19,10 @@
         <div class="logo-icon">🔧</div>
         <div class="logo-text"><h1>INDUSTRIAL MS</h1><p>MAINTENANCE SYSTEM</p></div>
     </div>
-    <nav class="nav-menu">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Menú">
+        <span></span><span></span><span></span>
+    </button>
+    <nav class="nav-menu" id="navMenu">
         <button class="nav-btn" onclick="location.href='dashboard.html'">📊 Dashboard</button>
         <button class="nav-btn active" id="nav-equipos" onclick="location.href='equipos.html'">🔌 Equipos</button>
         <button class="nav-btn" onclick="location.href='ordenes.html'">📋 Órdenes</button>
@@ -134,19 +137,20 @@
 
     async function doExportarExcel() {
         try {
-            const { data } = await supabase.from('equipos').select('numero, nombre, codigo_completo, centro_costo, proceso, criticidad, puntaje_criticidad, activo');
+            const { data } = await window.db.from('equipos').select('numero, nombre, codigo_completo, centro_costo, proceso, criticidad, puntaje_criticidad, activo');
             await exportarExcel(data, 'equipos', 'Equipos');
         } catch (err) { mostrarToast('Error exportando: ' + err.message, 'error'); }
     }
 
     async function doExportarPDF() {
         try {
-            const { data } = await supabase.from('equipos').select('numero, nombre, codigo_completo, criticidad');
+            const { data } = await window.db.from('equipos').select('numero, nombre, codigo_completo, criticidad');
             const body = (data || []).map(e => [e.numero ?? '—', e.nombre, e.codigo_completo, e.criticidad ?? '—']);
             await exportarPDF(['N°', 'Equipo', 'Código', 'Criticidad'], body, 'equipos');
         } catch (err) { mostrarToast('Error exportando: ' + err.message, 'error'); }
     }
 
+    initHamburger();
     init();
 </script>
 </body>
