@@ -246,22 +246,51 @@
         }
     }
 
+    // Refrescar sesión antes de cualquier acción
+    async function getSession() {
+        const { data: { session }, error } = await window.db.auth.getSession();
+        if (error || !session) {
+            // Sesión expirada — pedir re-autenticación
+            document.getElementById('controlSection').style.display = 'none';
+            document.getElementById('authSection').style.display = 'block';
+            log('Sesión expirada — vuelva a autenticarse', 'err');
+            throw new Error('Sesión expirada');
+        }
+        // Refrescar token si está por vencer
+        await window.db.auth.refreshSession();
+        return session;
+    }
+
     async function activarKill() {
         if (!confirm('⚠️ ¿Bloquear el sistema para todos los usuarios?')) return;
-        await window.db.from('system_config')
-            .upsert({ key: 'kill_switch', value: 'true' }, { onConflict: 'key' });
-        log('Kill switch ACTIVADO — sistema bloqueado', 'err');
-        actualizarUI(true);
-        mostrarToast('Sistema bloqueado', 'error');
+        try {
+            await getSession();
+            const { error } = await window.db.from('system_config')
+                .upsert({ key: 'kill_switch', value: 'true' }, { onConflict: 'key' });
+            if (error) throw error;
+            log('Kill switch ACTIVADO — sistema bloqueado', 'err');
+            actualizarUI(true);
+            mostrarToast('Sistema bloqueado', 'error');
+        } catch (err) {
+            if (err.message !== 'Sesión expirada')
+                log('Error: ' + err.message, 'err');
+        }
     }
 
     async function desactivarKill() {
         if (!confirm('¿Reactivar el sistema para todos los usuarios?')) return;
-        await window.db.from('system_config')
-            .upsert({ key: 'kill_switch', value: 'false' }, { onConflict: 'key' });
-        log('Kill switch DESACTIVADO — sistema reactivado', 'ok');
-        actualizarUI(false);
-        mostrarToast('Sistema reactivado', 'success');
+        try {
+            await getSession();
+            const { error } = await window.db.from('system_config')
+                .upsert({ key: 'kill_switch', value: 'false' }, { onConflict: 'key' });
+            if (error) throw error;
+            log('Kill switch DESACTIVADO — sistema reactivado', 'ok');
+            actualizarUI(false);
+            mostrarToast('Sistema reactivado', 'success');
+        } catch (err) {
+            if (err.message !== 'Sesión expirada')
+                log('Error: ' + err.message, 'err');
+        }
     }
 
     async function cerrarSesion() {
