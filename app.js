@@ -474,4 +474,34 @@ Object.assign(window, {
     badgeEstado, badgePrioridad, badgeCriticidad,
 });
 
+// ========== MENÚ HAMBURGUESA ==========
+function initHamburger() {
+    const btn = document.getElementById('hamburgerBtn');
+    const nav = document.getElementById('navMenu');
+    if (!btn || !nav) return;
+
+    btn.addEventListener('click', () => {
+        btn.classList.toggle('open');
+        nav.classList.toggle('open');
+    });
+
+    // Cerrar al hacer click en un nav-btn
+    nav.querySelectorAll('.nav-btn').forEach(b => {
+        b.addEventListener('click', () => {
+            btn.classList.remove('open');
+            nav.classList.remove('open');
+        });
+    });
+
+    // Cerrar al hacer click fuera
+    document.addEventListener('click', (e) => {
+        if (!btn.contains(e.target) && !nav.contains(e.target)) {
+            btn.classList.remove('open');
+            nav.classList.remove('open');
+        }
+    });
+}
+
+window.initHamburger = initHamburger;
+
 console.log('✅ app.js · Industrial MS listo');
