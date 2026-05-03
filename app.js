@@ -474,6 +474,34 @@ Object.assign(window, {
     badgeEstado, badgePrioridad, badgeCriticidad,
 });
 
+// ========== VERIFICADOR DE KILL SWITCH ==========
+let _killCheckInterval = null;
+
+async function iniciarKillSwitchCheck() {
+    // Verificar inmediatamente
+    await checkKillSwitch();
+    // Luego cada 15 segundos
+    _killCheckInterval = setInterval(checkKillSwitch, 15000);
+}
+
+async function checkKillSwitch() {
+    try {
+        const { data } = await window.db
+            .from('system_config')
+            .select('value')
+            .eq('key', 'kill_switch')
+            .single();
+
+        if (data?.value === 'true') {
+            clearInterval(_killCheckInterval);
+            await window.db.auth.signOut();
+            window.location.href = 'index.html';
+        }
+    } catch (e) { /* ignorar errores de red */ }
+}
+
+window.iniciarKillSwitchCheck = iniciarKillSwitchCheck;
+
 // ========== MENÚ HAMBURGUESA ==========
 function initHamburger() {
     const btn = document.getElementById('hamburgerBtn');
